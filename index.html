@@ -116,11 +116,25 @@
             return tmp.textContent || tmp.innerText || "";
         };
 
-        // --- Sanitiza HTML mínimo para evitar scripts injetados ---
+        // --- Sanitiza HTML permitindo apenas tags simples de formatação ---
         const sanitizeHtml = (html = '') => {
-            const tmp = document.createElement("div");
-            tmp.textContent = String(html);
-            return tmp.innerHTML.replace(/\n/g, '<br>');
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = String(html);
+
+            const allowedTags = new Set(['B', 'BR', 'STRONG', 'EM', 'U']);
+            const nodes = wrapper.querySelectorAll('*');
+
+            nodes.forEach((node) => {
+                if (!allowedTags.has(node.tagName)) {
+                    const textNode = document.createTextNode(node.textContent || '');
+                    node.replaceWith(textNode);
+                    return;
+                }
+
+                [...node.attributes].forEach((attr) => node.removeAttribute(attr.name));
+            });
+
+            return wrapper.innerHTML;
         };
 
         // --- Hook Customizado para Salvar no Cache (LocalStorage) ---
