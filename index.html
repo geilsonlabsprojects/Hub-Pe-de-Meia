@@ -282,7 +282,15 @@
                 setRespostaIA('');
 
                 try {
-                    const apiKey = "SUA_NOVA_CHAVE";
+                    const apiKey = (window.GEMINI_API_KEY || "").trim();
+                    if (!apiKey || apiKey === "SUA_NOVA_CHAVE") {
+                        throw new Error("Configure uma chave válida em window.GEMINI_API_KEY.");
+                    }
+
+                    const prompt = `Informe a data oficial de pagamento do Pé-de-Meia.
+Mês de nascimento: ${mesAniversario}
+Mês de referência da parcela: ${mesConsulta}
+Responda em texto simples e objetivo.`;
 
                     const response = await fetch(
                         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -291,15 +299,20 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 contents: [
-                                    { parts: [{ text: "Responda apenas: OK" }] }
+                                    { parts: [{ text: prompt }] }
                                 ]
                             })
                         }
                     );
 
-                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP ${response.status}`);
+                    }
 
-                    console.log(data); // 👈 MUITO IMPORTANTE
+                    const data = await response.json();
+                    if (data?.error?.message) {
+                        throw new Error(data.error.message);
+                    }
 
                     const texto =
                         data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -321,7 +334,7 @@
 
                 } catch (err) {
                     console.error(err);
-                    setError("Erro ao consultar IA");
+                    setError(err.message || "Erro ao consultar IA");
                 } finally {
                     setLoading(false);
                 }
