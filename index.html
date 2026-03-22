@@ -269,33 +269,79 @@
                 setExpandedHist(expandedHist === id ? null : id);
             };
 
-            const consultarIA = async () => {
-                setLoading(true);
-                setError('');
-                setRespostaIA('');
+          const consultarIA = async () => {
+    setLoading(true);
+    setError('');
+    setRespostaIA('');
 
-                try {
-                    let chavesAPI = [""]; // Default vazio (para o Canvas preencher)
-                    
-                    // Busca chaves no Remote Config (Firebase)
-                    try {
-                        if (window.firebaseApp.remoteConfig) {
-                            await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
-                            const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
-                            
-                            if (chavesStr) {
-                                try {
-                                    // Tenta como JSON ex: ["chave1", "chave2"]
-                                    chavesAPI = JSON.parse(chavesStr);
-                                } catch (e) {
-                                    // Se falhar, tenta como string separada por vírgula
-                                    chavesAPI = chavesStr.split(',').map(k => k.trim()).filter(k => k.length > 0);
-                                }
-                            }
-                        }
-                    } catch (rcError) {
-                        console.warn("Aviso: Falha ao buscar Remote Config. Usando fallback.", rcError);
-                    }
+    try {
+        let apiKey = ""; 
+        
+        // 1. Busca chave no Remote Config
+        try {
+            if (window.firebaseApp.remoteConfig) {
+                await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
+                const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
+                
+                if (chavesStr) {
+                    const chavesAPI = JSON.parse(chavesStr);
+                    apiKey = Array.isArray(chavesAPI) ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)] : chavesStr;
+                }
+            }
+        } catch (rcError) {
+            console.warn("Usando chave de fallback ou local");
+        }
+
+        // 2. Validação da Chave (Se não tiver chave, a consulta nem deve partir)
+        if (!apiKey || apiKey.trim() === "") {
+            throw new Error("Configuração de sistema pendente (API Key ausente).");
+        }
+
+        // 3. Endpoint Corrigido (Modelo gemini-1.5-flash)
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }]
+            })
+        });
+
+        const data = await response.json();
+
+        // Verifica se a API retornou erro de fato
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        const textoGerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (textoGerado) {
+            const respostaFormatada = textoGerado.replace(/```html/g, '').replace(/```/g, '');
+            setRespostaIA(respostaFormatada);
+            
+            // Salvar no histórico...
+            const novaPesquisa = {
+                id: Date.now(),
+                data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
+                aniversario: mesAniversario,
+                consulta: mesConsulta,
+                resposta: respostaFormatada
+            };
+            setHistorico([novaPesquisa, ...historico].slice(0, 10));
+        } else {
+            throw new Error("A IA não retornou uma resposta válida.");
+        }
+
+    } catch (err) {
+        console.error(err);
+        // Exibe o erro real no console para você debugar, mas mantém a mensagem amigável para o usuário
+        setError(err.message.includes("key") ? "Erro de autenticação na API" : "Erro ao consultar datas. Tente novamente em instantes.");
+    } finally {
+        setLoading(false);
+    }
+};
                     
                     // Sorteia uma chave do array
                     const apiKey = chavesAPI.length > 0 ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)] : "";
