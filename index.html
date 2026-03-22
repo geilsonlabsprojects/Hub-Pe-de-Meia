@@ -302,117 +302,37 @@
                 setRespostaIA('');
 
                 try {
-                    let apiKey = "";
+                    const apiKey = "SUA_NOVA_CHAVE";
 
-                    // 1. Busca chave no Remote Config
-                    try {
-                        if (window.firebaseApp?.remoteConfig) {
-                            await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
-                            const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
-                            if (chavesStr) {
-                                let chavesAPI = [];
-                                try {
-                                    const parsed = JSON.parse(chavesStr);
-                                    chavesAPI = Array.isArray(parsed) ? parsed : [String(parsed)];
-                                } catch {
-                                    chavesAPI = [chavesStr];
-                                }
-                                apiKey = chavesAPI.length > 0
-                                    ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)]
-                                    : "";
-                            }
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [
+                                    { parts: [{ text: "Responda apenas: OK" }] }
+                                ]
+                            })
                         }
-                    } catch (rcError) {
-                        console.warn("Falha ao carregar Remote Config:", rcError);
-                    }
-
-                    if (!apiKey || apiKey.trim() === "") {
-                        throw new Error("Configuração de sistema pendente (API Key ausente).");
-                    }
-
-                    const promptText = `
-Você é um assistente virtual EXTREMAMENTE PRECISO especializado nas DATAS OFICIAIS de pagamento do programa "Pé-de-Meia" do Governo Federal.
-
-ATENÇÃO MÁXIMA:
-- Você NÃO PODE criar, estimar, deduzir ou inferir datas.
-- Você NÃO PODE usar tabelas, padrões, listas ou regras internas.
-- Você NÃO PODE assumir datas com base em mês de nascimento.
-- Você NÃO PODE inventar pagamentos.
-- Se não tiver a informação EXATA e OFICIAL, você deve dizer que não sabe.
-
-DADOS:
-- Mês de nascimento do aluno: ${mesAniversario}
-- Parcela referente ao mês letivo: ${mesConsulta}
-
-PROCESSO OBRIGATÓRIO:
-1. Verifique se existe informação oficial EXATA para essa situação.
-2. Se NÃO tiver certeza absoluta da data:
-   - Informe que não é possível determinar a data com segurança.
-3. Se tiver certeza absoluta:
-   - Informe a data EXATA, sem alterar nada.
-
-FORMATO DA RESPOSTA:
-- Use HTML simples (<b>, <br>)
-- Seja direto
-- NÃO use blocos de código
-
-SAÍDA QUANDO HÁ DATA CONFIRMADA:
-<b>Data de pagamento:</b> DIA XX<br>
-<b>Referente ao mês:</b> ${mesConsulta}
-
-SAÍDA QUANDO NÃO É POSSÍVEL DETERMINAR:
-<b>Atenção:</b> Não foi possível identificar a data exata de pagamento para essa situação com segurança.
-
-REGRA FINAL:
-- Nunca invente datas.
-- Nunca use padrões ocultos.
-- Nunca arrisque um dia.
-`;
-
-                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: promptText }] }]
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Erro na API (${response.status})`);
-                    }
+                    );
 
                     const data = await response.json();
-                    if (data.error) {
-                        throw new Error(data.error.message || "Erro na resposta da IA.");
-                    }
-                    const textoGerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-                    if (textoGerado) {
-                        const respostaFormatada = textoGerado.replace(/```html/g, '').replace(/```/g, '');
-                        setRespostaIA(respostaFormatada);
+                    console.log(data); // 👈 MUITO IMPORTANTE
 
-                        // Salvar no histórico
-                        const novaPesquisa = {
-                            id: Date.now(),
-                            data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-                            aniversario: mesAniversario,
-                            consulta: mesConsulta,
-                            resposta: respostaFormatada
-                        };
-                        setHistorico(prev => [novaPesquisa, ...prev].slice(0, 10));
-                    } else {
-                        throw new Error("Resposta em branco.");
+                    const texto =
+                        data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (!texto) {
+                        throw new Error("Resposta inválida");
                     }
+
+                    setRespostaIA(texto);
 
                 } catch (err) {
                     console.error(err);
-                    setError(
-                        err.message?.includes("API Key")
-                            ? "Erro de autenticação na API"
-                            : "Erro ao consultar datas. Tente novamente em instantes."
-                    );
+                    setError("Erro ao consultar IA");
                 } finally {
                     setLoading(false);
                 }
