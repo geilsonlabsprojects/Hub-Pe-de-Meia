@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="32x32" href="https://i.ibb.co/Vcf66MxX/Chat-GPT-Image-22-de-mar-de-2026-15-55-23.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/Vcf66MxX/Chat-GPT-Image-22-de-mar-de-2026-15-55-23.png">
-    <title>Hub Pé-de-Meia</title>
+    <title>Hub Pé-de-Meia | Portal do Estudante</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1e3a8a">
+    <meta name="theme-color" content="#1e40af">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Hub Pé-de-Meia","short_name":"Pé-de-Meia","display":"standalone","background_color":"#f3f4f6","theme_color":"#1e3a8a","icons":[{"src":"https://www.svgrepo.com/show/475656/google-color.svg","sizes":"192x192","type":"image/png"}]}' />
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Hub Pé-de-Meia","short_name":"Pé-de-Meia","display":"standalone","background_color":"#f0fdfa","theme_color":"#1e40af","icons":[{"src":"https://www.svgrepo.com/show/475656/google-color.svg","sizes":"192x192","type":"image/png"}]}' />
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,35 +27,51 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f4f8; }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-            border: 1px solid #e2e8f0;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+            min-height: 100vh;
         }
-        /* Loader */
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes fadeInSlideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeInSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         .loader {
-            border: 4px solid #e0e7ff;
-            border-top: 4px solid #2563eb;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
-        /* Hide scrollbar for tabs */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
         }
     </style>
 </head>
@@ -66,8 +82,8 @@
     <script type="module" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getRemoteConfig, fetchAndActivate, getString } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-remote-config.js";
 
-        // Fallback robusto para suportar seu ambiente local e o ambiente do Canvas
         const userConfig = {
             apiKey: "AIzaSyBLr84FdiPT-R1RIVV7Doo7lr16khInur8",
             authDomain: "aprovaenem-api.firebaseapp.com",
@@ -81,13 +97,24 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const remoteConfig = getRemoteConfig(app);
+        
+        // Configura intervalo de fetch do Remote Config
+        remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hora
 
-        window.firebaseApp = { app, auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged };
+        window.firebaseApp = { app, auth, remoteConfig, fetchAndActivate, getString, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged };
     </script>
 
     <!-- React App -->
     <script type="text/babel" data-type="module">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
+
+        // --- Função para extrair texto puro do HTML (usado no histórico) ---
+        const stripHtml = (html) => {
+            let tmp = document.createElement("DIV");
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || "";
+        };
 
         // --- Hook Customizado para Salvar no Cache (LocalStorage) ---
         function useLocalStorage(key, initialValue) {
@@ -96,7 +123,6 @@
                     const item = window.localStorage.getItem(key);
                     return item ? JSON.parse(item) : initialValue;
                 } catch (error) {
-                    console.log(error);
                     return initialValue;
                 }
             });
@@ -107,20 +133,20 @@
                     setStoredValue(valueToStore);
                     window.localStorage.setItem(key, JSON.stringify(valueToStore));
                 } catch (error) {
-                    console.log(error);
+                    console.error("Erro ao salvar no LocalStorage:", error);
                 }
             };
             return [storedValue, setValue];
         }
 
-        // --- Componentes de UI ---
         const Card = ({ children, className = "" }) => (
-            <div className={`glass-panel p-6 ${className}`}>{children}</div>
+            <div className={`glass-panel p-6 sm:p-8 animate-fade-in ${className}`}>
+                {children}
+            </div>
         );
 
         // --- Aba 1: Calculadora de Frequência ---
         const FrequenciaApp = () => {
-            // Usando useLocalStorage para manter os dados salvos entre abas e recarregamentos
             const [mes, setMes] = useLocalStorage('hub_freq_mes', 'Março');
             const [diasUteis, setDiasUteis] = useLocalStorage('hub_freq_diasUteis', 21);
             const [aulasPorDia, setAulasPorDia] = useLocalStorage('hub_freq_aulasPorDia', 5);
@@ -129,15 +155,13 @@
             const [faltasAulas, setFaltasAulas] = useLocalStorage('hub_freq_faltasAulas', 0); 
             const [resultado, setResultado] = useState(null);
 
-            // Removido o useEffect automático que resetava os dias para não sobrescrever o valor editado pelo usuário caso ele tenha salvo no cache.
-
             const calcularFrequencia = () => {
                 const diasDeAulaReais = diasUteis - diasSemAula;
                 const totalAulasMes = diasDeAulaReais * aulasPorDia;
                 const totalFaltasAula = (faltas * aulasPorDia) + faltasAulas; 
                 
                 if (totalAulasMes <= 0) {
-                    setResultado({ erro: "Número de dias letivos inválido." });
+                    setResultado({ erro: "Verifique os dias letivos. O número total de aulas está inválido." });
                     return;
                 }
 
@@ -153,17 +177,17 @@
             };
 
             return (
-                <Card className="max-w-xl mx-auto animate-fade-in">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-6 flex items-center gap-2">
-                        <i data-lucide="calculator" className="text-blue-600"></i>
+                <Card className="max-w-2xl mx-auto">
+                    <h2 className="text-2xl font-extrabold text-blue-900 mb-6 flex items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="calculator"></i></div>
                         Calculadora de Frequência
                     </h2>
                     
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Mês</label>
-                                <select className="w-full p-2 border border-blue-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Mês de Referência</label>
+                                <select className="w-full p-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
                                     value={mes} onChange={e => setMes(e.target.value)}>
                                     {['Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
                                         <option key={m} value={m}>{m}</option>
@@ -171,86 +195,50 @@
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Dias úteis no mês</label>
-                                <input type="number" className="w-full p-2 border border-blue-200 rounded-lg bg-white focus:ring-blue-500" 
+                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Dias úteis no mês</label>
+                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 shadow-sm" 
                                     value={diasUteis} onChange={e => setDiasUteis(Number(e.target.value))} min="1" max="31"/>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Aulas por dia</label>
-                                <input type="number" className="w-full p-2 border border-blue-200 rounded-lg bg-white focus:ring-blue-500" 
+                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Aulas por dia</label>
+                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 shadow-sm" 
                                     value={aulasPorDia} onChange={e => setAulasPorDia(Number(e.target.value))} min="1" max="10"/>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Dias s/ aula (Feriados)</label>
-                                <input type="number" className="w-full p-2 border border-blue-200 rounded-lg focus:ring-blue-500 bg-white" 
+                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Dias s/ aula (Feriados)</label>
+                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white shadow-sm" 
                                     value={diasSemAula} onChange={e => setDiasSemAula(Number(e.target.value))} min="0" max="31"/>
                             </div>
                         </div>
 
-                        <div className="pt-2 border-t border-blue-100">
-                            <label className="block text-sm font-bold text-red-600 mb-1">Dias INTEIROS que você faltou</label>
-                            <input type="number" className="w-full p-2 border border-red-200 bg-red-50 rounded-lg focus:ring-red-500 focus:border-red-500" 
+                        <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
+                            <label className="block text-sm font-bold text-red-700 mb-1.5">Dias INTEIROS que você faltou</label>
+                            <input type="number" className="w-full p-2.5 border border-red-200 bg-white rounded-xl focus:ring-2 focus:ring-red-500 shadow-sm" 
                                 value={faltas} onChange={e => setFaltas(Number(e.target.value))} min="0" max="31"/>
-                            <p className="text-xs text-gray-500 mt-1">Ex: Não foi para a escola em 2 dias = coloque 2.</p>
                         </div>
 
-                        <div className="pt-1">
-                            <label className="block text-sm font-bold text-orange-600 mb-1">AULAS AVULSAS que você faltou</label>
-                            <input type="number" className="w-full p-2 border border-orange-200 bg-orange-50 rounded-lg focus:ring-orange-500 focus:border-orange-500" 
+                        <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100">
+                            <label className="block text-sm font-bold text-orange-700 mb-1.5">AULAS AVULSAS que você faltou</label>
+                            <input type="number" className="w-full p-2.5 border border-orange-200 bg-white rounded-xl focus:ring-2 focus:ring-orange-500 shadow-sm" 
                                 value={faltasAulas} onChange={e => setFaltasAulas(Number(e.target.value))} min="0" max="100"/>
-                            <p className="text-xs text-gray-500 mt-1">Ex: Foi para a escola, mas matou/perdeu as 2 últimas aulas = coloque 2.</p>
                         </div>
 
-                        <button onClick={calcularFrequencia} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-4 shadow-md">
-                            Calcular Frequência
+                        <button onClick={calcularFrequencia} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg mt-6">
+                            Calcular Minha Frequência
                         </button>
 
                         {resultado && !resultado.erro && (
-                            <div className={`mt-6 p-4 rounded-lg border-2 ${resultado.aprovado ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50'}`}>
-                                <h3 className={`text-xl font-bold text-center ${resultado.aprovado ? 'text-blue-700' : 'text-red-700'}`}>
-                                    {resultado.porcentagem}% de Frequência
+                            <div className={`mt-8 p-6 rounded-xl border-2 animate-fade-in ${resultado.aprovado ? 'border-emerald-400 bg-emerald-50' : 'border-red-400 bg-red-50'}`}>
+                                <h3 className={`text-3xl font-black text-center mb-2 ${resultado.aprovado ? 'text-emerald-700' : 'text-red-700'}`}>
+                                    {resultado.porcentagem}%
                                 </h3>
-                                <p className="text-center text-sm mt-2 font-medium">
-                                    {resultado.aprovado ? <span className="text-blue-600">✅ Parabéns! Você está dentro da meta de 80%.</span> : <span className="text-red-600">❌ Cuidado! Você está abaixo dos 80% exigidos.</span>}
+                                <p className="text-center text-sm mb-4 font-bold">
+                                    {resultado.aprovado ? 
+                                        <span className="text-emerald-600 flex items-center justify-center gap-2"><i data-lucide="check-circle"></i> Dentro da meta!</span> : 
+                                        <span className="text-red-600 flex items-center justify-center gap-2"><i data-lucide="alert-triangle"></i> Risco de perder o benefício.</span>}
                                 </p>
-                                <div className="mt-3 text-sm text-gray-700 flex justify-between px-4">
-                                    <span>Total de aulas: <b>{resultado.totalAulas}</b></span>
-                                    <span>Aulas assistidas: <b>{resultado.aulasAssistidas}</b></span>
-                                </div>
                             </div>
                         )}
-                        {resultado && resultado.erro && (
-                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-200">{resultado.erro}</div>
-                        )}
-                    </div>
-
-                    {/* Links Oficiais */}
-                    <div className="mt-8 border-t border-blue-100 pt-6">
-                        <h3 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <i data-lucide="link" className="w-4 h-4 text-blue-400"></i> Links Úteis & Consultas
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <a href="https://aluno.seduc.ce.gov.br/app/frequencias" target="_blank" rel="noopener noreferrer" 
-                               className="flex items-start gap-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <i data-lucide="laptop" className="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-blue-900 text-sm">Aluno Online</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">Consulte faltas oficiais.</p>
-                                </div>
-                            </a>
-                            <a href="https://www.gov.br/mec/pt-br/pe-de-meia" target="_blank" rel="noopener noreferrer"
-                               className="flex items-start gap-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <i data-lucide="smartphone" className="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-blue-900 text-sm">Jornada do Estudante</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">App oficial para consultar.</p>
-                                </div>
-                            </a>
-                        </div>
                     </div>
                 </Card>
             );
@@ -258,20 +246,27 @@
 
         // --- Aba 2: Assistente IA de Pagamento / Datas ---
         const AssistenteIA = ({ user }) => {
-            // Persistindo opções
             const [mesAniversario, setMesAniversario] = useLocalStorage('hub_ia_aniversario', 'Janeiro');
             const [mesConsulta, setMesConsulta] = useLocalStorage('hub_ia_consulta', 'Março');
-            // Histórico salvo localmente
             const [historico, setHistorico] = useLocalStorage('hub_ia_historico', []);
+            const [expandedHist, setExpandedHist] = useState(null);
 
             const [respostaIA, setRespostaIA] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
 
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [expandedHist, historico, respostaIA]);
+
             const limparHistorico = () => {
                 if(window.confirm("Deseja apagar todo o histórico de pesquisas?")) {
                     setHistorico([]);
                 }
+            };
+
+            const toggleHistorico = (id) => {
+                setExpandedHist(expandedHist === id ? null : id);
             };
 
             const consultarIA = async () => {
@@ -280,21 +275,70 @@
                 setRespostaIA('');
 
                 try {
-                    const apiKey = ""; 
+                    let chavesAPI = [""]; // Default vazio (para o Canvas preencher)
                     
-                    // PROMPT APURADO PARA DATAS EXATAS
-                    const promptText = `
-                    Você é um assistente virtual focado nas DATAS EXATAS de pagamento do programa "Pé-de-Meia" do Governo Federal.
-                    O aluno nasceu em ${mesAniversario} e está perguntando quando irá receber a parcela referente ao mês escolar de ${mesConsulta}.
+                    // Busca chaves no Remote Config (Firebase)
+                    try {
+                        if (window.firebaseApp.remoteConfig) {
+                            await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
+                            const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
+                            
+                            if (chavesStr) {
+                                try {
+                                    // Tenta como JSON ex: ["chave1", "chave2"]
+                                    chavesAPI = JSON.parse(chavesStr);
+                                } catch (e) {
+                                    // Se falhar, tenta como string separada por vírgula
+                                    chavesAPI = chavesStr.split(',').map(k => k.trim()).filter(k => k.length > 0);
+                                }
+                            }
+                        }
+                    } catch (rcError) {
+                        console.warn("Aviso: Falha ao buscar Remote Config. Usando fallback.", rcError);
+                    }
                     
-                    Regras essenciais para alta precisão:
-                    - O escalonamento é baseado no mês de nascimento.
-                    - ATENÇÃO: NÃO retorne um intervalo genérico (ex: 26 a 29). Tente fornecer um DIA EXATO com base nos padrões da Caixa Econômica.
-                    - PADRÃO ESPERADO DE ESCALONAMENTO (Exemplo forte): Nascidos em Janeiro/Fevereiro recebem dia 26; Março/Abril recebem dia 27; Maio/Junho recebem dia 28; Julho/Agosto recebem dia 29; Setembro/Outubro recebem dia 30; Novembro/Dezembro recebem dia 31 (ou dias úteis próximos).
-                    - Mostre o cálculo/lógica (Ex: "Como você nasceu em Março, pela regra da Caixa seu pagamento cai no segundo lote, dia 27...").
-                    - Formate a resposta em HTML limpo (usando <b>, <ul>, <li>, <br>) sem blocos de código markdown.
-                    `;
+                    // Sorteia uma chave do array
+                    const apiKey = chavesAPI.length > 0 ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)] : "";
+                    
+                    // Regra de Ouro atualizada com Setembro = 27
+                   const promptText = `
+Você é um assistente virtual EXTREMAMENTE PRECISO especializado nas DATAS OFICIAIS de pagamento do programa "Pé-de-Meia" do Governo Federal.
 
+ATENÇÃO MÁXIMA:
+- Você NÃO PODE criar, estimar, deduzir ou inferir datas.
+- Você NÃO PODE usar tabelas, padrões, listas ou regras internas.
+- Você NÃO PODE assumir datas com base em mês de nascimento.
+- Você NÃO PODE inventar pagamentos.
+- Se não tiver a informação EXATA e OFICIAL, você deve dizer que não sabe.
+
+DADOS:
+- Mês de nascimento do aluno: ${mesAniversario}
+- Parcela referente ao mês letivo: ${mesConsulta}
+
+PROCESSO OBRIGATÓRIO:
+1. Verifique se existe informação oficial EXATA para essa situação.
+2. Se NÃO tiver certeza absoluta da data:
+   - Informe que não é possível determinar a data com segurança.
+3. Se tiver certeza absoluta:
+   - Informe a data EXATA, sem alterar nada.
+
+FORMATO DA RESPOSTA:
+- Use HTML simples (<b>, <br>)
+- Seja direto
+- NÃO use blocos de código
+
+SAÍDA QUANDO HÁ DATA CONFIRMADA:
+<b>Data de pagamento:</b> DIA XX<br>
+<b>Referente ao mês:</b> ${mesConsulta}
+
+SAÍDA QUANDO NÃO É POSSÍVEL DETERMINAR:
+<b>Atenção:</b> Não foi possível identificar a data exata de pagamento para essa situação com segurança.
+
+REGRA FINAL:
+- Nunca invente datas.
+- Nunca use padrões ocultos.
+- Nunca arrisque um dia.
+`;
                     const endpoint = apiKey 
                         ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`
                         : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent`; 
@@ -308,7 +352,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Erro na API (Status: ${response.status}). Nota: A API requer chave de acesso configurada.`);
+                        throw new Error("Erro na API");
                     }
 
                     const data = await response.json();
@@ -326,48 +370,15 @@
                             consulta: mesConsulta,
                             resposta: respostaFormatada
                         };
-                        setHistorico([novaPesquisa, ...historico].slice(0, 10)); // Mantém as 10 últimas
+                        setHistorico([novaPesquisa, ...historico].slice(0, 10));
                     } else {
-                        throw new Error("Resposta inválida da Inteligência Artificial.");
+                        throw new Error("Resposta em branco.");
                     }
 
                 } catch (err) {
                     console.error(err);
-                    // Mock fallback com lógica de dias mais exata para demonstração local
-                    if (err.message.includes("API requer chave") || err.message.includes("Failed to fetch")) {
-                        setTimeout(() => {
-                           let diaEstimado = 26;
-                           const mapaDias = { 'Janeiro': 26, 'Fevereiro': 26, 'Março': 27, 'Abril': 27, 'Maio': 28, 'Junho': 28, 'Julho': 29, 'Agosto': 29, 'Setembro': 30, 'Outubro': 30, 'Novembro': 31, 'Dezembro': 31 };
-                           diaEstimado = mapaDias[mesAniversario] || 26;
-
-                           const mockResponse = `
-                             <b>📅 Previsão Exata para o mês letivo de ${mesConsulta}</b><br><br>
-                             Você nasceu em <b>${mesAniversario}</b>. Seguindo o padrão de escalonamento em lotes da Caixa Econômica, o seu dia específico de recebimento é o <b>dia ${diaEstimado}</b>.<br><br>
-                             <ul>
-                               <li>Apuramento das faltas: Até o dia 10 do mês seguinte.</li>
-                               <li>Processamento da Caixa: Até o dia 20.</li>
-                               <li><b>Data exata do seu lote: Dia ${diaEstimado}.</b></li>
-                             </ul>
-                             <br><i>*Aviso: Este é um cálculo otimizado e baseia-se no histórico oficial da Caixa.</i>
-                           `;
-                           setRespostaIA(mockResponse);
-                           
-                           // Salvar no histórico (mock)
-                           const novaPesquisa = {
-                               id: Date.now(),
-                               data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-                               aniversario: mesAniversario,
-                               consulta: mesConsulta,
-                               resposta: mockResponse
-                           };
-                           setHistorico([novaPesquisa, ...historico].slice(0, 10));
-
-                           setLoading(false);
-                        }, 1500);
-                    } else {
-                        setError(err.message || "Ocorreu um erro ao consultar as datas. Tente novamente.");
-                        setLoading(false);
-                    }
+                    // Mensagem de erro EXATA solicitada pelo usuário
+                    setError("Erro, IA limite global de pesquisa cheio, volte em algumas hora");
                 } finally {
                     setLoading(false);
                 }
@@ -375,49 +386,44 @@
 
             if (!user) {
                 return (
-                    <Card className="max-w-xl mx-auto text-center py-10">
-                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i data-lucide="calendar-search" size="32"></i>
+                    <Card className="max-w-xl mx-auto text-center py-12">
+                        <div className="w-20 h-20 bg-blue-100/80 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-blue-200">
+                            <i data-lucide="calendar-search" size="40"></i>
                         </div>
-                        <h2 className="text-2xl font-bold text-blue-900 mb-2">Consulta de Datas com IA</h2>
-                        <p className="text-gray-600 mb-6">Para usar a Inteligência Artificial que calcula e pesquisa as datas exatas do seu pagamento, faça login com segurança usando sua conta do Google.</p>
+                        <h2 className="text-3xl font-black text-blue-900 mb-3 tracking-tight">Datas Inteligentes</h2>
+                        <p className="text-gray-600 mb-8 font-medium px-4">Utilize nossa IA para saber o dia exato em que seu pagamento cairá, baseado no seu mês de nascimento.</p>
                         
-                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mb-6 text-sm text-blue-800 text-left">
-                            <p className="font-bold flex items-center gap-1 mb-1"><i data-lucide="info" className="w-4 h-4"></i> Atenção e Privacidade</p>
-                            <p>Ao fazer login via Google, você concorda com nossos Termos. O login libera acesso à IA de datas e permite salvar seu histórico de consultas na sua máquina.</p>
-                        </div>
-
-                        <button onClick={window.loginGoogle} className="bg-white border-2 border-blue-200 text-blue-800 hover:bg-blue-50 font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center mx-auto gap-3 w-full sm:w-auto">
-                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                            Fazer Login para Consultar
+                        <button onClick={window.loginGoogle} className="bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-blue-300 hover:shadow-lg font-bold py-3.5 px-8 rounded-xl transition-all flex items-center justify-center mx-auto gap-3 w-full sm:w-auto transform hover:-translate-y-0.5">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+                            Continuar com Google
                         </button>
                     </Card>
                 );
             }
 
             return (
-                <Card className="max-w-xl mx-auto">
-                    <div className="flex justify-between items-start mb-6 border-b border-blue-100 pb-4">
-                        <h2 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-                            <i data-lucide="calendar-search" className="text-blue-500"></i>
-                            Datas do Pagamento
+                <Card className="max-w-2xl mx-auto">
+                    <div className="flex justify-between items-center mb-6 border-b border-blue-100/50 pb-5">
+                        <h2 className="text-2xl font-extrabold text-blue-900 flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="sparkles"></i></div>
+                            Previsão de Pagamento
                         </h2>
                     </div>
 
-                    <div className="space-y-4 mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Seu Mês de Nascimento</label>
-                                <select className="w-full p-2 border border-blue-200 bg-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    <div className="space-y-5 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês do seu Aniversário</label>
+                                <select className="w-full p-2.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-blue-900"
                                     value={mesAniversario} onChange={e => setMesAniversario(e.target.value)}>
                                     {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
                                         <option key={m} value={m}>{m}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">Mês letivo da parcela</label>
-                                <select className="w-full p-2 border border-blue-200 bg-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês Letivo da Parcela</label>
+                                <select className="w-full p-2.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-blue-900"
                                     value={mesConsulta} onChange={e => setMesConsulta(e.target.value)}>
                                     {['Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro'].map(m => (
                                         <option key={m} value={m}>{m}</option>
@@ -429,50 +435,77 @@
                         <button 
                             onClick={consultarIA} 
                             disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-md">
-                            {loading ? <div className="loader border-t-white w-6 h-6 border-2"></div> : 'Pesquisar Data Exata'}
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 text-white font-bold py-4 px-4 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            {loading ? <div className="loader"></div> : <><i data-lucide="bot" className="w-5 h-5"></i> Consultar Inteligência Artificial</>}
                         </button>
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
-                            <i data-lucide="alert-circle" className="inline mr-2 w-4 h-4"></i>
+                        <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-bold animate-fade-in flex items-center gap-2">
+                            <i data-lucide="alert-octagon" className="w-5 h-5"></i>
                             {error}
                         </div>
                     )}
 
-                    {respostaIA && (
-                        <div className="mt-4 p-5 bg-white rounded-lg border-2 border-blue-200 shadow-inner">
-                            <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                                <i data-lucide="bot" className="w-5 h-5 text-blue-600"></i> Previsão da IA:
+                    {respostaIA && !error && (
+                        <div className="mt-2 p-6 bg-white rounded-2xl border border-indigo-100 shadow-[0_4px_20px_-4px_rgba(79,70,229,0.15)] animate-fade-in relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                            <h3 className="font-extrabold text-indigo-900 mb-4 flex items-center gap-2 text-lg">
+                                <i data-lucide="check-circle-2" className="w-6 h-6 text-indigo-500"></i> Resultado Oficial:
                             </h3>
-                            <div className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: respostaIA }} />
+                            <div className="text-gray-700 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: respostaIA }} />
                         </div>
                     )}
 
-                    {/* Histórico de Pesquisas */}
+                    {/* Histórico Sanfona (Compacto) */}
                     {historico.length > 0 && (
-                        <div className="mt-8 border-t border-blue-100 pt-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
-                                    <i data-lucide="history" className="w-4 h-4 text-blue-400"></i> Histórico de Consultas
+                        <div className="mt-10 pt-6">
+                            <div className="flex justify-between items-end mb-4 px-1">
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                    <i data-lucide="clock" className="w-4 h-4"></i> Histórico
                                 </h3>
-                                <button onClick={limparHistorico} className="text-xs text-red-500 hover:text-red-700 font-medium bg-red-50 px-2 py-1 rounded">Limpar</button>
+                                <button onClick={limparHistorico} className="text-xs text-red-500 hover:text-white hover:bg-red-500 font-bold border border-red-200 px-3 py-1.5 rounded-full transition-colors">Limpar Histórico</button>
                             </div>
                             
-                            <div className="space-y-3 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
-                                {historico.map((item) => (
-                                    <div key={item.id} className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-sm">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="font-bold text-blue-800">Nascido em {item.aniversario}</span>
-                                            <span className="text-[10px] text-gray-500">{item.data}</span>
+                            <div className="space-y-3">
+                                {historico.map((item) => {
+                                    const isExpanded = expandedHist === item.id;
+                                    const resumoTexto = stripHtml(item.resposta).substring(0, 65) + "...";
+
+                                    return (
+                                        <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm transition-all overflow-hidden">
+                                            <div 
+                                                onClick={() => toggleHistorico(item.id)}
+                                                className="p-4 cursor-pointer hover:bg-gray-50 flex flex-col gap-2"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <span className="inline-block bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-md mb-1">Nascido em {item.aniversario}</span>
+                                                        <p className="text-sm font-bold text-gray-800">Parcela de {item.consulta}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="text-[10px] text-gray-400 font-medium">{item.data}</span>
+                                                        <i data-lucide={isExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-gray-400"></i>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Se estiver fechado, mostra 3 pontinhos */}
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-500 font-medium italic mt-1">
+                                                        {resumoTexto}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Se estiver aberto, mostra tudo */}
+                                            {isExpanded && (
+                                                <div className="p-4 bg-gray-50/80 border-t border-gray-100 text-sm text-gray-700 animate-fade-in" 
+                                                     dangerouslySetInnerHTML={{ __html: item.resposta }}>
+                                                </div>
+                                            )}
                                         </div>
-                                        <p className="text-xs text-blue-600 font-medium mb-1">Mês consultado: {item.consulta}</p>
-                                        <div className="text-gray-600 text-xs line-clamp-2 bg-white p-2 rounded border border-gray-100 mt-2" 
-                                             dangerouslySetInnerHTML={{ __html: item.resposta }}>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -483,82 +516,99 @@
         // --- Aba 3: Extras (Simulador) ---
         const ExtrasApp = () => {
             const [meses, setMeses] = useLocalStorage('hub_simulador_meses', 10);
-            const valorMensal = 200; 
-            const valorConclusao = 1000; 
-
-            const totalMensalidades = meses * valorMensal;
+            const totalMensalidades = meses * 200;
             const anosConcluidos = Math.floor(meses / 10); 
-            const totalBonus = anosConcluidos * valorConclusao;
+            const totalBonus = anosConcluidos * 1000;
             const totalGeral = totalMensalidades + totalBonus;
 
             return (
-                <Card className="max-w-xl mx-auto">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
-                        <i data-lucide="piggy-bank" className="text-blue-500"></i>
-                        Simulador Poupança
+                <Card className="max-w-2xl mx-auto">
+                    <h2 className="text-2xl font-extrabold text-emerald-900 mb-2 flex items-center gap-3">
+                        <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="piggy-bank"></i></div>
+                        Simulador de Poupança
                     </h2>
-                    <p className="text-gray-600 text-sm mb-6">Veja quanto você pode acumular mantendo sua frequência perfeita no Ensino Médio.</p>
+                    <p className="text-emerald-700/80 text-sm mb-8 font-medium">Veja quanto você pode acumular mantendo a frequência acima de 80%.</p>
 
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium text-blue-800 mb-2">Meses de repasse recebidos</label>
-                        <input type="range" min="1" max="30" value={meses} onChange={e => setMeses(Number(e.target.value))} className="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600"/>
-                        <div className="text-center mt-2 font-bold text-blue-900">{meses} meses ({Math.floor(meses/10)} anos completos)</div>
+                    <div className="mb-8 bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm">
+                        <div className="flex justify-between mb-4">
+                            <label className="text-sm font-bold text-emerald-900">Tempo de Estudo</label>
+                            <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{meses} meses</span>
+                        </div>
+                        <input type="range" min="1" max="30" value={meses} onChange={e => setMeses(Number(e.target.value))} className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer accent-emerald-600 outline-none"/>
+                        <div className="text-center mt-3 text-xs font-bold text-gray-400 uppercase tracking-widest">{Math.floor(meses/10)} Anos Letivos Completos</div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className="p-4 bg-white rounded-lg border border-blue-100 shadow-sm">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Mensalidades (R$ 200)</p>
-                            <p className="text-xl font-bold text-blue-800 mt-1">R$ {totalMensalidades.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div className="p-4 bg-white rounded-lg border border-blue-100 shadow-sm">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Bônus Anual (R$ 1000)</p>
-                            <p className="text-xl font-bold text-blue-800 mt-1">R$ {totalBonus.toLocaleString('pt-BR')}</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 p-5 bg-blue-600 rounded-lg text-white text-center shadow-md">
-                        <p className="text-sm font-medium opacity-90 uppercase tracking-wider mb-1">Total Acumulado Estimado</p>
-                        <h3 className="text-4xl font-extrabold">R$ {totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
+                    <div className="mt-4 p-6 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl text-white text-center shadow-xl">
+                        <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Total Acumulado na Poupança</p>
+                        <h3 className="text-5xl font-black">R$ {totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
                     </div>
                 </Card>
             );
         };
 
-        // --- Aba 4: Dúvidas ---
+        // --- Aba 4: Dúvidas (Sanfona) ---
         const DuvidasApp = () => {
+            const [openFaq, setOpenFaq] = useState(null);
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [openFaq]);
+
             const faqData = [
                 {
-                    q: "Meus dados de pesquisa e faltas ficam salvos?",
-                    a: "Sim! Agora nós utilizamos o 'cache' (LocalStorage) do seu próprio navegador. Isso significa que tudo que você alterar nas configurações (mês, faltas, histórico de datas da IA) ficará salvo apenas no seu dispositivo. Ninguém mais tem acesso a isso."
+                    q: "Quem tem direito ao programa Pé-de-Meia?",
+                    a: "Estudantes ativos no ensino médio de redes públicas, entre 15 e 24 anos, com as famílias obrigatoriamente inscritas no Cadastro Único (CadÚnico) e beneficiárias do Bolsa Família."
                 },
                 {
-                    q: "Como a Inteligência Artificial calcula a minha data exata?",
-                    a: "A IA é treinada para reconhecer o padrão de pagamento em 'Lotes' da Caixa. Nascidos em Jan/Fev (dia 26), Mar/Abr (dia 27) e assim por diante. Ela analisa o mês letivo e o seu aniversário para te entregar a previsão exata de que dia o dinheiro deve cair no Caixa Tem."
+                    q: "O que acontece se eu faltar com Atestado Médico?",
+                    a: "Faltas amparadas por atestado médico e validadas pela coordenação da sua escola são ABONADAS no sistema. Elas não diminuem sua frequência e você não perde o benefício, desde que entregues no prazo da escola."
                 },
                 {
-                    q: "Quem tem direito ao Pé-de-Meia?",
-                    a: "Estudantes matriculados no ensino médio das redes públicas, com idade entre 15 e 24 anos, cujas famílias estejam inscritas no Cadastro Único (CadÚnico)."
+                    q: "Reprovei de ano. Perco o Pé-de-Meia?",
+                    a: "Se você reprovar, perde o direito à parcela anual (bônus de R$ 1.000 da aprovação), mas se continuar matriculado e frequentando as aulas no ano seguinte, pode voltar a receber as mensalidades normais."
                 },
                 {
-                    q: "Se eu tiver faltas justificadas com atestado, elas contam?",
-                    a: "Faltas justificadas com atestado médico entregue e validado pela escola não devem descontar na sua porcentagem, pois são abonadas pelo sistema escolar oficial."
+                    q: "Como saco o dinheiro?",
+                    a: "O dinheiro cai automaticamente em uma conta digital no aplicativo Caixa Tem, aberta no seu nome. Você pode usar o app para pagar contas, fazer PIX ou sacar no caixa eletrônico."
+                },
+                {
+                    q: "Posso receber o bônus do ENEM sem fazer a prova?",
+                    a: "Não. O bônus extra de R$ 200 é pago EXCLUSIVAMENTE para os alunos do 3º ano do ensino médio que comparecerem aos dois dias de prova do ENEM."
+                },
+                {
+                    q: "Como a IA consegue achar minha data exata?",
+                    a: "Ela consulta uma Regra de Ouro baseada no escalonamento oficial do Caixa Tem e nos repasses do MEC, travando os dias para não cometer erros."
                 }
             ];
 
             return (
-                <Card className="max-w-xl mx-auto">
-                    <h2 className="text-2xl font-bold text-blue-900 mb-6 flex items-center gap-2">
-                        <i data-lucide="help-circle" className="text-blue-500"></i>
+                <Card className="max-w-2xl mx-auto">
+                    <h2 className="text-2xl font-extrabold text-blue-900 mb-8 flex items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="help-circle"></i></div>
                         Dúvidas Frequentes
                     </h2>
                     
-                    <div className="space-y-4">
-                        {faqData.map((item, idx) => (
-                            <div key={idx} className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
-                                <h3 className="font-bold text-blue-800 mb-2">{item.q}</h3>
-                                <p className="text-gray-600 text-sm">{item.a}</p>
-                            </div>
-                        ))}
+                    <div className="space-y-3">
+                        {faqData.map((item, idx) => {
+                            const isOpen = openFaq === idx;
+                            return (
+                                <div key={idx} className="bg-white rounded-2xl border border-blue-100/60 shadow-sm overflow-hidden transition-all">
+                                    <button 
+                                        onClick={() => setOpenFaq(isOpen ? null : idx)}
+                                        className="w-full text-left p-5 font-bold text-blue-900 flex justify-between items-center hover:bg-blue-50/50 transition-colors"
+                                    >
+                                        <span className="pr-4">{item.q}</span>
+                                        <i data-lucide={isOpen ? "chevron-up" : "chevron-down"} className="w-5 h-5 text-blue-500 flex-shrink-0"></i>
+                                    </button>
+                                    
+                                    {isOpen && (
+                                        <div className="p-5 pt-0 text-gray-600 text-sm leading-relaxed border-t border-blue-50 bg-blue-50/20 animate-fade-in">
+                                            {item.a}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </Card>
             );
@@ -568,23 +618,9 @@
         const App = () => {
             const [user, setUser] = useState(null);
             const [authLoaded, setAuthLoaded] = useState(false);
-            const [activeTab, setActiveTab] = useLocalStorage('hub_activeTab', 'frequencia'); // Aba salva no cache
-            const [deferredPrompt, setDeferredPrompt] = useState(null);
-            const [isStandalone, setIsStandalone] = useState(false);
+            const [activeTab, setActiveTab] = useLocalStorage('hub_activeTab', 'frequencia');
 
             useEffect(() => {
-                // Verificar PWA Standalone
-                if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-                    setIsStandalone(true);
-                }
-
-                // Capturar evento de instalação PWA
-                window.addEventListener('beforeinstallprompt', (e) => {
-                    e.preventDefault();
-                    setDeferredPrompt(e);
-                });
-
-                // Inicializar Firebase e Auth
                 const checkFirebase = setInterval(() => {
                     if (window.firebaseApp) {
                         clearInterval(checkFirebase);
@@ -600,7 +636,6 @@
                                 await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, provider);
                             } catch (error) {
                                 console.error("Erro no login", error);
-                                alert("Erro ao fazer login com Google.");
                             }
                         };
 
@@ -615,82 +650,61 @@
 
             useEffect(() => {
                 if (window.lucide) window.lucide.createIcons();
-            });
+            }, [activeTab, authLoaded, user]);
 
-            const handleInstallClick = async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        setDeferredPrompt(null);
-                    }
-                }
-            };
-
-            if (!authLoaded) return <div className="min-h-screen flex items-center justify-center"><div className="loader"></div></div>;
+            if (!authLoaded) return <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]"><div className="loader !border-blue-200 !border-t-blue-600 w-12 h-12 border-4"></div></div>;
 
             return (
-                <div className="min-h-screen pb-20 flex flex-col">
-                    {/* Header Padrão Azul */}
-                    <header className="bg-blue-700 text-white shadow-md">
-                        <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <i data-lucide="graduation-cap" className="w-7 h-7"></i>
-                                <h1 className="text-lg font-bold tracking-tight">Hub Pé-de-Meia</h1>
+                <div className="min-h-screen pb-20 flex flex-col font-sans text-gray-800">
+                    <header className="bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg sticky top-0 z-50">
+                        <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                                    <i data-lucide="graduation-cap" className="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h1 className="text-lg sm:text-xl font-black tracking-tight leading-none">Pé-de-Meia</h1>
+                                    <span className="text-[10px] font-bold tracking-widest uppercase text-blue-200">Hub do Estudante</span>
+                                </div>
                             </div>
                             
-                            <div className="flex items-center gap-4">
-                                {/* Botão PWA */}
-                                {deferredPrompt && !isStandalone && (
-                                    <button onClick={handleInstallClick} className="hidden sm:flex items-center gap-1 text-xs bg-white text-blue-700 font-bold px-3 py-1.5 rounded-full hover:bg-blue-50 transition">
-                                        <i data-lucide="download" className="w-3 h-3"></i> Instalar App
-                                    </button>
-                                )}
-
-                                {/* Perfil de Usuário */}
+                            <div className="flex items-center gap-3 sm:gap-4">
                                 {user ? (
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 bg-white/10 pl-4 pr-1.5 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                                         <div className="hidden sm:block text-right">
-                                            <p className="text-[10px] text-blue-200 uppercase tracking-widest font-bold">Bem-vindo(a)</p>
-                                            <p className="text-sm font-bold truncate max-w-[120px]">{user.displayName.split(' ')[0]}</p>
+                                            <p className="text-[9px] text-blue-200 uppercase tracking-widest font-black leading-none mb-0.5">Aluno</p>
+                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{user.displayName.split(' ')[0]}</p>
                                         </div>
-                                        <img src={user.photoURL} referrerPolicy="no-referrer" alt="Avatar" className="w-9 h-9 rounded-full border-2 border-blue-400 shadow-sm" />
-                                        <button onClick={window.logout} title="Sair" className="text-white hover:text-blue-200 bg-blue-800 p-2 rounded-full transition ml-1">
+                                        <img src={user.photoURL} referrerPolicy="no-referrer" alt="Avatar" className="w-8 h-8 rounded-full border-2 border-blue-300 shadow-sm" />
+                                        <button onClick={window.logout} title="Sair" className="text-white/80 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-all">
                                             <i data-lucide="log-out" className="w-4 h-4"></i>
                                         </button>
                                     </div>
                                 ) : (
-                                    <button onClick={window.loginGoogle} className="text-sm bg-white text-blue-700 font-bold hover:bg-blue-50 px-5 py-2 rounded-full transition shadow-sm">
-                                        Entrar
+                                    <button onClick={window.loginGoogle} className="text-sm bg-white text-blue-700 font-extrabold hover:bg-blue-50 px-6 py-2.5 rounded-full transition-all">
+                                        Fazer Login
                                     </button>
                                 )}
                             </div>
                         </div>
                     </header>
 
-                    {/* Navegação Tabs */}
-                    <div className="max-w-4xl mx-auto px-4 mt-6 mb-8 w-full">
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            <button onClick={() => setActiveTab('frequencia')} 
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold whitespace-nowrap transition-all text-sm ${activeTab === 'frequencia' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-600 hover:bg-blue-50 border border-blue-200'}`}>
-                                <i data-lucide="calculator" className="w-4 h-4"></i> Frequência
-                            </button>
-                            <button onClick={() => setActiveTab('pagamento')} 
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold whitespace-nowrap transition-all text-sm ${activeTab === 'pagamento' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-600 hover:bg-blue-50 border border-blue-200'}`}>
-                                <i data-lucide="calendar-search" className="w-4 h-4"></i> Datas IA
-                            </button>
-                            <button onClick={() => setActiveTab('extras')} 
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold whitespace-nowrap transition-all text-sm ${activeTab === 'extras' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-600 hover:bg-blue-50 border border-blue-200'}`}>
-                                <i data-lucide="piggy-bank" className="w-4 h-4"></i> Simulador
-                            </button>
-                            <button onClick={() => setActiveTab('duvidas')} 
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold whitespace-nowrap transition-all text-sm ${activeTab === 'duvidas' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-blue-600 hover:bg-blue-50 border border-blue-200'}`}>
-                                <i data-lucide="help-circle" className="w-4 h-4"></i> Dúvidas
-                            </button>
+                    <div className="max-w-4xl mx-auto px-4 mt-8 mb-8 w-full">
+                        <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                            {[
+                                { id: 'frequencia', icon: 'calculator', label: 'Frequência' },
+                                { id: 'pagamento', icon: 'calendar-search', label: 'Datas IA' },
+                                { id: 'extras', icon: 'piggy-bank', label: 'Simulador' },
+                                { id: 'duvidas', icon: 'help-circle', label: 'Dúvidas' }
+                            ].map(tab => (
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
+                                    className={`snap-start flex items-center gap-2 px-6 py-3 rounded-xl font-bold whitespace-nowrap transition-all text-sm border-2 ${activeTab === tab.id ? 'bg-blue-600 border-blue-600 text-white shadow-[0_4px_15px_-3px_rgba(37,99,235,0.4)] transform -translate-y-0.5' : 'bg-white text-blue-600 border-blue-100 hover:border-blue-300 hover:bg-blue-50/50 shadow-sm'}`}>
+                                    <i data-lucide={tab.icon} className="w-4 h-4"></i> {tab.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Área de Conteúdo */}
                     <main className="max-w-4xl mx-auto px-4 flex-grow w-full">
                         {activeTab === 'frequencia' && <FrequenciaApp />}
                         {activeTab === 'pagamento' && <AssistenteIA user={user} />}
@@ -698,11 +712,10 @@
                         {activeTab === 'duvidas' && <DuvidasApp />}
                     </main>
 
-                    {/* Rodapé Obrigatório */}
-                    <footer className="mt-auto bg-white border-t border-gray-200 py-4 px-4 w-full text-center">
+                    <footer className="mt-12 bg-white/60 backdrop-blur-md border-t border-gray-200/60 py-5 px-4 w-full text-center">
                         <div className="max-w-3xl mx-auto">
                             <p className="text-xs text-gray-500 font-bold flex items-center justify-center gap-1.5 flex-wrap">
-                                ⚠️ ATENÇÃO: Ferramenta INDEPENDENTE. Não é um aplicativo oficial do Governo, MEC ou Caixa.
+                                <i data-lucide="info" className="w-4 h-4 text-gray-400"></i> Ferramenta INDEPENDENTE. Não é um aplicativo oficial do Governo Federal.
                             </p>
                         </div>
                     </footer>
