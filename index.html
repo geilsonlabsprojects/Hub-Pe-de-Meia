@@ -269,85 +269,35 @@
                 setExpandedHist(expandedHist === id ? null : id);
             };
 
-          const consultarIA = async () => {
-    setLoading(true);
-    setError('');
-    setRespostaIA('');
+            const consultarIA = async () => {
+                setLoading(true);
+                setError('');
+                setRespostaIA('');
 
-    try {
-        let apiKey = ""; 
-        
-        // 1. Busca chave no Remote Config
-        try {
-            if (window.firebaseApp.remoteConfig) {
-                await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
-                const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
-                
-                if (chavesStr) {
-                    const chavesAPI = JSON.parse(chavesStr);
-                    apiKey = Array.isArray(chavesAPI) ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)] : chavesStr;
-                }
-            }
-        } catch (rcError) {
-            console.warn("Usando chave de fallback ou local");
-        }
+                try {
+                    let apiKey = "";
 
-        // 2. Validação da Chave (Se não tiver chave, a consulta nem deve partir)
-        if (!apiKey || apiKey.trim() === "") {
-            throw new Error("Configuração de sistema pendente (API Key ausente).");
-        }
+                    // 1. Busca chave no Remote Config
+                    try {
+                        if (window.firebaseApp?.remoteConfig) {
+                            await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
+                            const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
+                            if (chavesStr) {
+                                const chavesAPI = JSON.parse(chavesStr);
+                                apiKey = Array.isArray(chavesAPI)
+                                    ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)]
+                                    : chavesStr;
+                            }
+                        }
+                    } catch (rcError) {
+                        console.warn("Falha ao carregar Remote Config:", rcError);
+                    }
 
-        // 3. Endpoint Corrigido (Modelo gemini-1.5-flash)
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    if (!apiKey || apiKey.trim() === "") {
+                        throw new Error("Configuração de sistema pendente (API Key ausente).");
+                    }
 
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }]
-            })
-        });
-
-        const data = await response.json();
-
-        // Verifica se a API retornou erro de fato
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        const textoGerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (textoGerado) {
-            const respostaFormatada = textoGerado.replace(/```html/g, '').replace(/```/g, '');
-            setRespostaIA(respostaFormatada);
-            
-            // Salvar no histórico...
-            const novaPesquisa = {
-                id: Date.now(),
-                data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-                aniversario: mesAniversario,
-                consulta: mesConsulta,
-                resposta: respostaFormatada
-            };
-            setHistorico([novaPesquisa, ...historico].slice(0, 10));
-        } else {
-            throw new Error("A IA não retornou uma resposta válida.");
-        }
-
-    } catch (err) {
-        console.error(err);
-        // Exibe o erro real no console para você debugar, mas mantém a mensagem amigável para o usuário
-        setError(err.message.includes("key") ? "Erro de autenticação na API" : "Erro ao consultar datas. Tente novamente em instantes.");
-    } finally {
-        setLoading(false);
-    }
-};
-                    
-                    // Sorteia uma chave do array
-                    const apiKey = chavesAPI.length > 0 ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)] : "";
-                    
-                    // Regra de Ouro atualizada com Setembro = 27
-                   const promptText = `
+                    const promptText = `
 Você é um assistente virtual EXTREMAMENTE PRECISO especializado nas DATAS OFICIAIS de pagamento do programa "Pé-de-Meia" do Governo Federal.
 
 ATENÇÃO MÁXIMA:
@@ -385,9 +335,8 @@ REGRA FINAL:
 - Nunca use padrões ocultos.
 - Nunca arrisque um dia.
 `;
-                    const endpoint = apiKey 
-                        ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`
-                        : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent`; 
+
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(endpoint, {
                         method: 'POST',
@@ -398,10 +347,13 @@ REGRA FINAL:
                     });
 
                     if (!response.ok) {
-                        throw new Error("Erro na API");
+                        throw new Error(`Erro na API (${response.status})`);
                     }
 
                     const data = await response.json();
+                    if (data.error) {
+                        throw new Error(data.error.message || "Erro na resposta da IA.");
+                    }
                     const textoGerado = data.candidates?.[0]?.content?.parts?.[0]?.text;
                     
                     if (textoGerado) {
@@ -423,8 +375,11 @@ REGRA FINAL:
 
                 } catch (err) {
                     console.error(err);
-                    // Mensagem de erro EXATA solicitada pelo usuário
-                    setError("Erro, IA limite global de pesquisa cheio, volte em algumas hora");
+                    setError(
+                        err.message?.includes("API Key")
+                            ? "Erro de autenticação na API"
+                            : "Erro ao consultar datas. Tente novamente em instantes."
+                    );
                 } finally {
                     setLoading(false);
                 }
@@ -719,7 +674,7 @@ REGRA FINAL:
                                     <div className="flex items-center gap-3 bg-white/10 pl-4 pr-1.5 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                                         <div className="hidden sm:block text-right">
                                             <p className="text-[9px] text-blue-200 uppercase tracking-widest font-black leading-none mb-0.5">Aluno</p>
-                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{user.displayName.split(' ')[0]}</p>
+                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{(user.displayName || user.email || "Aluno").split(' ')[0]}</p>
                                         </div>
                                         <img src={user.photoURL} referrerPolicy="no-referrer" alt="Avatar" className="w-8 h-8 rounded-full border-2 border-blue-300 shadow-sm" />
                                         <button onClick={window.logout} title="Sair" className="text-white/80 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-all">
