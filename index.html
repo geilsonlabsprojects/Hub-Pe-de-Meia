@@ -106,14 +106,21 @@
     </script>
 
     <!-- React App -->
-    <script type="text/babel" data-type="module">
-        const { useState, useEffect, useRef } = React;
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
         // --- Função para extrair texto puro do HTML (usado no histórico) ---
         const stripHtml = (html) => {
             let tmp = document.createElement("DIV");
             tmp.innerHTML = html;
             return tmp.textContent || tmp.innerText || "";
+        };
+
+        // --- Sanitiza HTML mínimo para evitar scripts injetados ---
+        const sanitizeHtml = (html = '') => {
+            const tmp = document.createElement("div");
+            tmp.textContent = String(html);
+            return tmp.innerHTML.replace(/\n/g, '<br>');
         };
 
         // --- Hook Customizado para Salvar no Cache (LocalStorage) ---
@@ -283,10 +290,16 @@
                             await window.firebaseApp.fetchAndActivate(window.firebaseApp.remoteConfig);
                             const chavesStr = window.firebaseApp.getString(window.firebaseApp.remoteConfig, 'pe_de_meia');
                             if (chavesStr) {
-                                const chavesAPI = JSON.parse(chavesStr);
-                                apiKey = Array.isArray(chavesAPI)
+                                let chavesAPI = [];
+                                try {
+                                    const parsed = JSON.parse(chavesStr);
+                                    chavesAPI = Array.isArray(parsed) ? parsed : [String(parsed)];
+                                } catch {
+                                    chavesAPI = [chavesStr];
+                                }
+                                apiKey = chavesAPI.length > 0
                                     ? chavesAPI[Math.floor(Math.random() * chavesAPI.length)]
-                                    : chavesStr;
+                                    : "";
                             }
                         }
                     } catch (rcError) {
@@ -368,7 +381,7 @@ REGRA FINAL:
                             consulta: mesConsulta,
                             resposta: respostaFormatada
                         };
-                        setHistorico([novaPesquisa, ...historico].slice(0, 10));
+                        setHistorico(prev => [novaPesquisa, ...prev].slice(0, 10));
                     } else {
                         throw new Error("Resposta em branco.");
                     }
@@ -454,7 +467,7 @@ REGRA FINAL:
                             <h3 className="font-extrabold text-indigo-900 mb-4 flex items-center gap-2 text-lg">
                                 <i data-lucide="check-circle-2" className="w-6 h-6 text-indigo-500"></i> Resultado Oficial:
                             </h3>
-                            <div className="text-gray-700 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: respostaIA }} />
+                            <div className="text-gray-700 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(respostaIA) }} />
                         </div>
                     )}
 
@@ -501,7 +514,7 @@ REGRA FINAL:
                                             {/* Se estiver aberto, mostra tudo */}
                                             {isExpanded && (
                                                 <div className="p-4 bg-gray-50/80 border-t border-gray-100 text-sm text-gray-700 animate-fade-in" 
-                                                     dangerouslySetInnerHTML={{ __html: item.resposta }}>
+                                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.resposta) }}>
                                                 </div>
                                             )}
                                         </div>
@@ -620,11 +633,23 @@ REGRA FINAL:
             const [user, setUser] = useState(null);
             const [authLoaded, setAuthLoaded] = useState(false);
             const [activeTab, setActiveTab] = useLocalStorage('hub_activeTab', 'frequencia');
+            const [authError, setAuthError] = useState('');
 
             useEffect(() => {
+                window.loginGoogle = () => {};
+                window.logout = () => {};
+
+                const failSafeTimeout = setTimeout(() => {
+                    if (!window.firebaseApp) {
+                        setAuthError("Falha ao inicializar autenticação. Recarregue a página.");
+                        setAuthLoaded(true);
+                    }
+                }, 5000);
+
                 const checkFirebase = setInterval(() => {
                     if (window.firebaseApp) {
                         clearInterval(checkFirebase);
+                        clearTimeout(failSafeTimeout);
                         
                         window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, (currentUser) => {
                             setUser(currentUser);
@@ -646,7 +671,10 @@ REGRA FINAL:
                     }
                 }, 100);
 
-                return () => clearInterval(checkFirebase);
+                return () => {
+                    clearInterval(checkFirebase);
+                    clearTimeout(failSafeTimeout);
+                };
             }, []);
 
             useEffect(() => {
@@ -691,6 +719,11 @@ REGRA FINAL:
                     </header>
 
                     <div className="max-w-4xl mx-auto px-4 mt-8 mb-8 w-full">
+                        {authError && (
+                            <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 font-semibold">
+                                {authError}
+                            </div>
+                        )}
                         <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hide snap-x">
                             {[
                                 { id: 'frequencia', icon: 'calculator', label: 'Frequência' },
