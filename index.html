@@ -282,9 +282,9 @@
                 setRespostaIA('');
 
                 try {
-                    const apiKey = (window.GEMINI_API_KEY || "").trim();
-                    if (!apiKey || apiKey === "SUA_NOVA_CHAVE") {
-                        throw new Error("Configure uma chave válida em window.GEMINI_API_KEY.");
+                    const apiKey = (window.GEMINI_API_KEY || "AIzaSyCIWrENniRQOFPayu9seqHYqXxsbQ-ie7Q").trim();
+                    if (!apiKey) {
+                        throw new Error("Chave da API não configurada.");
                     }
 
                     const prompt = `Informe a data oficial de pagamento do Pé-de-Meia.
