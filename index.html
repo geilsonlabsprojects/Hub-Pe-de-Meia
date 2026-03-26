@@ -2,17 +2,16 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" sizes="32x32" href="https://i.ibb.co/Vcf66MxX/Chat-GPT-Image-22-de-mar-de-2026-15-55-23.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/Vcf66MxX/Chat-GPT-Image-22-de-mar-de-2026-15-55-23.png">
     <title>Hub Pé-de-Meia | Portal do Estudante</title>
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1e40af">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Hub Pé-de-Meia","short_name":"Pé-de-Meia","display":"standalone","background_color":"#f0fdfa","theme_color":"#1e40af","icons":[{"src":"https://www.svgrepo.com/show/475656/google-color.svg","sizes":"192x192","type":"image/png"}]}' />
-
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -27,84 +26,120 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-gradient: linear-gradient(140deg, #f0f4f8 0%, #e2e8f0 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+        }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
             min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            border-radius: 1.25rem;
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
         }
 
-        @keyframes fadeInSlideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Animações Premium */
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .animate-fade-in {
-            animation: fadeInSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-slide-up {
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #ffffff;
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        }
+        .btn-pulse { animation: pulseGlow 2s infinite; }
+
+        /* Loader */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+            border-top-color: #fff;
+            animation: spin 0.8s ease-in-out infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* Esconder Scrollbars */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        /* Input Styling Aprimorado */
+        input[type="number"], select {
+            transition: all 0.3s ease;
+        }
+        input[type="number"]:focus, select:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15);
         }
     </style>
 </head>
-<body>
+<body class="text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="root"></div>
 
     <!-- Firebase SDKs -->
     <script type="module" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        // IMPORTANTE: Adicionado GoogleAuthProvider e signInWithPopup
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-remote-config.js";
 
-        // Fallback genérico caso não exista __firebase_config no ambiente
-        const userConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyBLr84FdiPT-R1RIVV7Doo7lr16khInur8",
             authDomain: "aprovaenem-api.firebaseapp.com",
             projectId: "aprovaenem-api",
             storageBucket: "aprovaenem-api.firebasestorage.app",
             messagingSenderId: "717749759571",
             appId: "1:717749759571:web:9ef5eafee3e574799c60a6",
+            measurementId: "G-HCY69TGJ9B"
         };
-        
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userConfig;
 
         try {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
+            const remoteConfig = getRemoteConfig(app);
+            const googleProvider = new GoogleAuthProvider();
 
-            // Exportar para o React via Window
-            window.firebaseApp = { app, auth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut };
+            // Exportar para o React (incluindo Google Login)
+            window.firebaseApp = { app, auth, googleProvider, signInWithPopup, onAuthStateChanged, signOut, apiKeys: [] };
             window.firebaseAppError = "";
+
+            remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
+            remoteConfig.defaultConfig = { "pe_de_meia": "[]" };
+
+            fetchAndActivate(remoteConfig).then(() => {
+                const chavesJson = getValue(remoteConfig, 'pe_de_meia').asString();
+                try {
+                    const chavesArray = JSON.parse(chavesJson);
+                    if (Array.isArray(chavesArray) && chavesArray.length > 0) {
+                        window.firebaseApp.apiKeys = chavesArray;
+                    }
+                } catch (e) {
+                    console.error("Erro ao processar chaves API", e);
+                }
+            }).catch(e => console.error(e));
+
         } catch (error) {
-            console.error("Falha ao inicializar Firebase:", error);
-            window.firebaseAppError = "Falha ao inicializar serviços da plataforma.";
+            console.error("Erro fatal Firebase:", error);
+            window.firebaseAppError = "Falha de conexão com os servidores.";
         }
     </script>
 
@@ -112,84 +147,78 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- Componente Seguro para Ícones ---
-        // Previne o erro "Failed to execute 'removeChild'" garantindo que o React não tente gerir elementos modificados pelo Lucide.
-        const Icon = ({ name, className = "" }) => {
+        // --- Componente de Ícones Seguro ---
+        const Icon = ({ name, className = "", strokeWidth = 2.5 }) => {
             const containerRef = useRef(null);
-
             useEffect(() => {
                 if (containerRef.current && window.lucide) {
-                    containerRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+                    containerRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" stroke-width="${strokeWidth}"></i>`;
                     window.lucide.createIcons();
                 }
-            }, [name, className]);
-
+            }, [name, className, strokeWidth]);
             return <span ref={containerRef} style={{ display: 'contents' }}></span>;
         };
 
-        // --- Função para extrair texto puro do HTML ---
-        const stripHtml = (html) => {
-            return html.replace(/<[^>]*>?/gm, '');
-        };
-
-        // --- Sanitiza HTML permitindo apenas tags simples de formatação ---
+        // --- Utilitários ---
         const sanitizeHtml = (html = '') => {
             const wrapper = document.createElement("div");
             wrapper.innerHTML = String(html);
-
             const allowedTags = new Set(['B', 'BR', 'STRONG', 'EM', 'U', 'UL', 'LI']);
             const nodes = wrapper.querySelectorAll('*');
-
-            nodes.forEach((node) => {
+            nodes.forEach(node => {
                 if (!allowedTags.has(node.tagName)) {
-                    const textNode = document.createTextNode(node.textContent || '');
-                    node.replaceWith(textNode);
-                    return;
+                    node.replaceWith(document.createTextNode(node.textContent || ''));
+                } else {
+                    [...node.attributes].forEach(attr => node.removeAttribute(attr.name));
                 }
-                [...node.attributes].forEach((attr) => node.removeAttribute(attr.name));
             });
-
             return wrapper.innerHTML;
         };
 
-        // --- Hook Customizado para Salvar no Cache (LocalStorage) ---
         function useLocalStorage(key, initialValue) {
             const [storedValue, setStoredValue] = useState(() => {
-                try {
-                    const item = window.localStorage.getItem(key);
-                    return item ? JSON.parse(item) : initialValue;
-                } catch (error) {
-                    return initialValue;
-                }
+                try { return JSON.parse(window.localStorage.getItem(key)) || initialValue; } 
+                catch { return initialValue; }
             });
-
             const setValue = (value) => {
                 try {
                     const valueToStore = value instanceof Function ? value(storedValue) : value;
                     setStoredValue(valueToStore);
                     window.localStorage.setItem(key, JSON.stringify(valueToStore));
-                } catch (error) {
-                    console.error("Erro ao salvar no LocalStorage:", error);
-                }
+                } catch (error) { console.error(error); }
             };
             return [storedValue, setValue];
         }
 
         const Card = ({ children, className = "" }) => (
-            <div className={`glass-panel p-6 sm:p-8 animate-fade-in ${className}`}>
+            <div className={`glass-panel p-6 sm:p-8 animate-slide-up ${className}`}>
                 {children}
             </div>
         );
 
-        // --- Aba 1: Calculadora de Frequência ---
+        // --- Aba 1: Calculadora de Frequência (Dinâmica) ---
         const FrequenciaApp = () => {
+            // Tabela de dias úteis padrão por mês (estimativa Brasil 2026/Geral)
+            const diasUteisPorMes = {
+                'Fevereiro': 19, 'Março': 21, 'Abril': 22, 'Maio': 21, 'Junho': 21,
+                'Julho': 15, 'Agosto': 22, 'Setembro': 22, 'Outubro': 21, 'Novembro': 20, 'Dezembro': 15
+            };
+
             const [mes, setMes] = useLocalStorage('hub_freq_mes', 'Março');
-            const [diasUteis, setDiasUteis] = useLocalStorage('hub_freq_diasUteis', 21);
+            const [diasUteis, setDiasUteis] = useLocalStorage('hub_freq_diasUteis', diasUteisPorMes['Março']);
             const [aulasPorDia, setAulasPorDia] = useLocalStorage('hub_freq_aulasPorDia', 5);
             const [diasSemAula, setDiasSemAula] = useLocalStorage('hub_freq_diasSemAula', 0);
             const [faltas, setFaltas] = useLocalStorage('hub_freq_faltas', 0);
             const [faltasAulas, setFaltasAulas] = useLocalStorage('hub_freq_faltasAulas', 0);
             const [resultado, setResultado] = useState(null);
+
+            // Atualiza os dias úteis automaticamente ao mudar o mês
+            const handleMesChange = (e) => {
+                const novoMes = e.target.value;
+                setMes(novoMes);
+                setDiasUteis(diasUteisPorMes[novoMes] || 20);
+                setDiasSemAula(0); // Reseta os feriados ao mudar o mês
+            };
 
             const calcularFrequencia = () => {
                 const diasDeAulaReais = diasUteis - diasSemAula;
@@ -197,11 +226,10 @@
                 const totalFaltasAula = (faltas * aulasPorDia) + faltasAulas;
 
                 if (totalAulasMes <= 0) {
-                    setResultado({ erro: "Verifique os dias letivos. O número total de aulas está inválido." });
+                    setResultado({ erro: "Verifica os dias letivos. Não há aulas suficientes no mês." });
                     return;
                 }
 
-                // Garante que não tenhamos aulas assistidas negativas
                 const aulasAssistidas = Math.max(0, totalAulasMes - totalFaltasAula);
                 const porcentagem = (aulasAssistidas / totalAulasMes) * 100;
 
@@ -214,72 +242,90 @@
             };
 
             return (
-                <Card className="max-w-2xl mx-auto">
-                    <h2 className="text-2xl font-extrabold text-blue-900 mb-6 flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                            <Icon name="calculator" />
+                <Card className="max-w-2xl mx-auto border-t-4 border-t-blue-500">
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-3 rounded-2xl text-white shadow-lg shadow-blue-500/30">
+                            <Icon name="calculator" className="w-7 h-7" />
                         </div>
-                        Calculadora de Frequência
-                    </h2>
+                        <div>
+                            <h2 className="text-2xl font-extrabold text-slate-800 leading-tight">Calculadora de Frequência</h2>
+                            <p className="text-sm font-medium text-slate-500">Garante que não perdes os teus pagamentos.</p>
+                        </div>
+                    </div>
 
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Mês de Referência</label>
-                                <select className="w-full p-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                                    value={mes} onChange={e => setMes(e.target.value)}>
-                                    {['Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
+                            <div className="relative">
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Mês de Referência</label>
+                                <select className="w-full p-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 font-semibold appearance-none"
+                                    value={mes} onChange={handleMesChange}>
+                                    {Object.keys(diasUteisPorMes).map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
+                                <Icon name="chevron-down" className="w-4 h-4 text-slate-400 absolute right-4 top-10 pointer-events-none" />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Dias úteis no mês</label>
-                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 shadow-sm"
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1 flex justify-between">
+                                    Dias úteis (Automático) <span className="text-blue-500">editar</span>
+                                </label>
+                                <input type="number" className="w-full p-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 font-semibold"
                                     value={diasUteis} onChange={e => setDiasUteis(Number(e.target.value))} min="1" max="31"/>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Aulas por dia</label>
-                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 shadow-sm"
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Aulas por dia</label>
+                                <input type="number" className="w-full p-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 font-semibold"
                                     value={aulasPorDia} onChange={e => setAulasPorDia(Number(e.target.value))} min="1" max="10"/>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-blue-900 mb-1.5">Dias s/ aula (Feriados)</label>
-                                <input type="number" className="w-full p-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2 ml-1">Dias s/ aula (Feriados)</label>
+                                <input type="number" className="w-full p-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 font-semibold"
                                     value={diasSemAula} onChange={e => setDiasSemAula(Number(e.target.value))} min="0" max="31"/>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
-                            <label className="block text-sm font-bold text-red-700 mb-1.5">Dias INTEIROS que faltaste</label>
-                            <input type="number" className="w-full p-2.5 border border-red-200 bg-white rounded-xl focus:ring-2 focus:ring-red-500 shadow-sm"
-                                value={faltas} onChange={e => setFaltas(Number(e.target.value))} min="0" max="31"/>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
+                            <div className="p-5 bg-red-50/80 rounded-2xl border border-red-100 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-red-100 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-red-700 mb-2">Dias INTEIROS que faltaste</label>
+                                <input type="number" className="w-full p-3 bg-white border border-red-200 rounded-xl focus:ring-4 focus:ring-red-500/20 text-red-900 font-bold text-lg"
+                                    value={faltas} onChange={e => setFaltas(Number(e.target.value))} min="0" max="31"/>
+                            </div>
+
+                            <div className="p-5 bg-orange-50/80 rounded-2xl border border-orange-100 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
+                                <label className="block text-[11px] uppercase tracking-wider font-bold text-orange-700 mb-2">Aulas AVULSAS que faltaste</label>
+                                <input type="number" className="w-full p-3 bg-white border border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 text-orange-900 font-bold text-lg"
+                                    value={faltasAulas} onChange={e => setFaltasAulas(Number(e.target.value))} min="0" max="100"/>
+                            </div>
                         </div>
 
-                        <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100">
-                            <label className="block text-sm font-bold text-orange-700 mb-1.5">AULAS AVULSAS que faltaste</label>
-                            <input type="number" className="w-full p-2.5 border border-orange-200 bg-white rounded-xl focus:ring-2 focus:ring-orange-500 shadow-sm"
-                                value={faltasAulas} onChange={e => setFaltasAulas(Number(e.target.value))} min="0" max="100"/>
-                        </div>
-
-                        <button onClick={calcularFrequencia} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg mt-6">
-                            Calcular Minha Frequência
+                        <button onClick={calcularFrequencia} className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl shadow-lg mt-4 transition-all active:scale-[0.98] flex justify-center items-center gap-2 text-base">
+                            <Icon name="activity" className="w-5 h-5" /> Calcular Frequência
                         </button>
 
                         {resultado && !resultado.erro && (
-                            <div className={`mt-8 p-6 rounded-xl border-2 animate-fade-in ${resultado.aprovado ? 'border-emerald-400 bg-emerald-50' : 'border-red-400 bg-red-50'}`}>
-                                <h3 className={`text-3xl font-black text-center mb-2 ${resultado.aprovado ? 'text-emerald-700' : 'text-red-700'}`}>
-                                    {resultado.porcentagem}%
-                                </h3>
-                                <p className="text-center text-sm mb-4 font-bold">
-                                    {resultado.aprovado ?
-                                        <span className="text-emerald-600 flex items-center justify-center gap-2"><Icon name="check-circle" /> Dentro da meta!</span> :
-                                        <span className="text-red-600 flex items-center justify-center gap-2"><Icon name="alert-triangle" /> Risco de perder o benefício.</span>}
-                                </p>
+                            <div className={`mt-6 p-8 rounded-3xl border-2 animate-slide-up relative overflow-hidden ${resultado.aprovado ? 'border-emerald-500 bg-emerald-50' : 'border-red-500 bg-red-50'}`}>
+                                <div className={`absolute -right-6 -top-6 w-32 h-32 rounded-full opacity-10 ${resultado.aprovado ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                
+                                <div className="text-center relative z-10">
+                                    <p className="text-sm font-bold uppercase tracking-widest mb-1 opacity-70">A tua frequência em {mes} é de</p>
+                                    <h3 className={`text-6xl font-black mb-4 tracking-tighter ${resultado.aprovado ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {resultado.porcentagem}%
+                                    </h3>
+                                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${resultado.aprovado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                                        {resultado.aprovado ? (
+                                            <><Icon name="check-circle-2" className="w-5 h-5"/> Seguro! Tens direito à parcela.</>
+                                        ) : (
+                                            <><Icon name="alert-triangle" className="w-5 h-5"/> Risco! Frequência abaixo de 80%.</>
+                                        )}
+                                    </div>
+                                    <p className="mt-4 text-xs font-medium text-slate-500">
+                                        Assististe a {resultado.aulasAssistidas} de {resultado.totalAulas} aulas totais.
+                                    </p>
+                                </div>
                             </div>
                         )}
                         {resultado && resultado.erro && (
-                            <div className="mt-4 p-4 text-red-700 bg-red-50 border border-red-200 rounded-xl font-bold text-sm">
+                            <div className="mt-4 p-4 text-red-700 bg-red-50 border border-red-200 rounded-xl font-bold text-sm text-center">
                                 {resultado.erro}
                             </div>
                         )}
@@ -288,290 +334,196 @@
             );
         };
 
-        // --- Aba 2: Assistente IA de Pagamento / Datas ---
-        const AssistenteIA = ({ user }) => {
+        // --- Aba 2: Assistente IA (Protegido com Login Google) ---
+        const AssistenteIA = ({ user, fazerLogin }) => {
             const [mesAniversario, setMesAniversario] = useLocalStorage('hub_ia_aniversario', 'Janeiro');
             const [mesConsulta, setMesConsulta] = useLocalStorage('hub_ia_consulta', 'Março');
-            const [historico, setHistorico] = useLocalStorage('hub_ia_historico', []);
-            const [expandedHist, setExpandedHist] = useState(null);
-
             const [respostaIA, setRespostaIA] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
 
-            const limparHistorico = () => {
-                if(window.confirm("Desejas apagar todo o histórico de pesquisas?")) {
-                    setHistorico([]);
-                }
-            };
-
-            const toggleHistorico = (id) => {
-                setExpandedHist(expandedHist === id ? null : id);
-            };
+            // TELA DE BLOQUEIO SE NÃO ESTIVER LOGADO
+            if (!user) {
+                return (
+                    <Card className="max-w-2xl mx-auto text-center py-12 border-t-4 border-t-indigo-500 flex flex-col items-center justify-center min-h-[400px]">
+                        <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <Icon name="lock" className="w-10 h-10 text-indigo-500" strokeWidth={2} />
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-slate-800 mb-3">Inteligência Artificial Restrita</h2>
+                        <p className="text-slate-500 font-medium mb-8 max-w-md mx-auto text-sm leading-relaxed">
+                            Para utilizares o nosso assistente inteligente e veres previsões exatas de pagamento, precisas de vincular a tua conta do Google. É rápido e 100% seguro.
+                        </p>
+                        <button onClick={fazerLogin} className="bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-bold py-3.5 px-8 rounded-full shadow-sm transition-all flex items-center gap-3">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+                            Continuar com Google
+                        </button>
+                    </Card>
+                );
+            }
 
             const consultarIA = async () => {
-                setLoading(true);
-                setError('');
-                setRespostaIA('');
-
+                setLoading(true); setError(''); setRespostaIA('');
                 try {
-                    const apiKey = ""; // A chave da API é injetada em ambiente de execução
-                    const promptText = `Atua como um assistente especialista no programa "Pé-de-Meia" do Governo do Brasil. O aluno indicou que nasceu no mês de ${mesAniversario} e deseja obter informações sobre o pagamento da parcela letiva referente a ${mesConsulta}. Cria uma resposta curta, objetiva e amigável, indicando de forma clara uma estimativa de quando deverá receber (por norma, a última semana do mês seguinte) e relembrando o requisito de frequência (mínimo de 80%). Usa formatação em HTML simples (<b>, <ul>, <li>, <br>) para organizar a resposta. Não uses markdown.`;
-
-                    const payload = {
-                        contents: [{ parts: [{ text: promptText }] }],
-                        systemInstruction: { parts: [{ text: "És um assistente do portal Pé-de-Meia. Responde sempre de forma clara e amigável, orientando os estudantes brasileiros." }] }
-                    };
-
-                    const fetchWithRetry = async (retries = 5, delay = 1000) => {
-                        try {
-                            const response = await fetch(
-                                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                                {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
-                                }
-                            );
-                            if (!response.ok) throw new Error("Falha na API");
-                            return await response.json();
-                        } catch (err) {
-                            if (retries === 0) throw err;
-                            await new Promise(r => setTimeout(r, delay));
-                            return fetchWithRetry(retries - 1, delay * 2);
-                        }
-                    };
-
-                    const data = await fetchWithRetry();
-                    const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                    if (!texto) {
-                        throw new Error("Resposta inválida do servidor");
-                    }
-
-                    setRespostaIA(texto);
-
-                    // Atualizar o histórico
-                    const novoHistorico = {
-                        id: Date.now(),
-                        aniversario: mesAniversario,
-                        consulta: mesConsulta,
-                        data: new Date().toLocaleDateString('pt-PT'),
-                        resposta: texto
-                    };
+                    const chaves = window.firebaseApp?.apiKeys || [];
+                    if (chaves.length === 0) throw new Error("Sistema a iniciar. Tenta em 5 segundos.");
                     
-                    setHistorico(prev => [novoHistorico, ...prev]);
+                    const apiKey = chaves[Math.floor(Math.random() * chaves.length)];
+                    const prompt = `Atua como um assistente especialista no programa Pé-de-Meia. Aluno nascido em ${mesAniversario}, quer saber sobre a parcela letiva de ${mesConsulta}. Resposta curta, direta e amigável, dando a estimativa de pagamento. Usa <b> e <ul>.`;
 
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    
+                    if (!res.ok) throw new Error("Serviço temporariamente indisponível.");
+                    const data = await res.json();
+                    setRespostaIA(data.candidates[0].content.parts[0].text);
                 } catch (err) {
-                    console.error("Erro na consulta IA:", err);
-                    setError("Não foi possível consultar a Inteligência Artificial neste momento. Tenta novamente mais tarde.");
+                    setError(err.message);
                 } finally {
                     setLoading(false);
                 }
             };
 
             return (
-                <Card className="max-w-2xl mx-auto">
-                    <div className="flex justify-between items-center mb-6 border-b border-blue-100/50 pb-5">
-                        <h2 className="text-2xl font-extrabold text-blue-900 flex items-center gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                                <Icon name="sparkles" />
-                            </div>
-                            Previsão de Pagamento
-                        </h2>
-                    </div>
-
-                    <div className="space-y-5 mb-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
-                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês do teu Aniversário</label>
-                                <select className="w-full p-2.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-blue-900"
-                                    value={mesAniversario} onChange={e => setMesAniversario(e.target.value)}>
-                                    {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
-                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês Letivo da Parcela</label>
-                                <select className="w-full p-2.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-blue-900"
-                                    value={mesConsulta} onChange={e => setMesConsulta(e.target.value)}>
-                                    {['Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro'].map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                            </div>
+                <Card className="max-w-2xl mx-auto border-t-4 border-t-indigo-500">
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
+                            <Icon name="bot" className="w-7 h-7" />
                         </div>
-
-                        <button
-                            onClick={consultarIA}
-                            disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 text-white font-bold py-4 px-4 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            {loading ? <div className="loader"></div> : <><Icon name="bot" className="w-5 h-5" /> Consultar Inteligência Artificial</>}
-                        </button>
+                        <div>
+                            <h2 className="text-2xl font-extrabold text-slate-800 leading-tight">Previsão IA</h2>
+                            <p className="text-sm font-medium text-slate-500 flex items-center gap-1">
+                                Bem-vindo(a), {user.displayName?.split(' ')[0] || 'Estudante'} <Icon name="check-circle" className="w-3 h-3 text-emerald-500"/>
+                            </p>
+                        </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 focus-within:border-indigo-500 transition-colors">
+                            <label className="block text-[10px] uppercase tracking-widest font-extrabold text-indigo-500 mb-2">Mês do Aniversário</label>
+                            <select className="w-full bg-transparent border-none p-0 focus:ring-0 text-slate-800 font-bold text-lg cursor-pointer outline-none"
+                                value={mesAniversario} onChange={e => setMesAniversario(e.target.value)}>
+                                {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map(m => <option key={m}>{m}</option>)}
+                            </select>
+                        </div>
+                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 focus-within:border-indigo-500 transition-colors">
+                            <label className="block text-[10px] uppercase tracking-widest font-extrabold text-indigo-500 mb-2">Mês da Parcela</label>
+                            <select className="w-full bg-transparent border-none p-0 focus:ring-0 text-slate-800 font-bold text-lg cursor-pointer outline-none"
+                                value={mesConsulta} onChange={e => setMesConsulta(e.target.value)}>
+                                {['Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro'].map(m => <option key={m}>{m}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onClick={consultarIA} disabled={loading}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-70 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/20 transition-all flex justify-center items-center gap-2 active:scale-[0.98]">
+                        {loading ? <div className="spinner"></div> : <><Icon name="sparkles" className="w-5 h-5" /> Consultar Calendário</>}
+                    </button>
 
                     {error && (
-                        <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-bold animate-fade-in flex items-center gap-2">
-                            <Icon name="alert-octagon" className="w-5 h-5" />
-                            {error}
+                        <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-2xl border border-red-200 text-sm font-bold flex gap-3 animate-slide-up">
+                            <Icon name="alert-octagon" className="w-5 h-5 shrink-0" /> <p>{error}</p>
                         </div>
                     )}
 
                     {respostaIA && !error && (
-                        <div className="mt-2 p-6 bg-white rounded-2xl border border-indigo-100 shadow-[0_4px_20px_-4px_rgba(79,70,229,0.15)] animate-fade-in relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                            <h3 className="font-extrabold text-indigo-900 mb-4 flex items-center gap-2 text-lg">
-                                <Icon name="check-circle-2" className="w-6 h-6 text-indigo-500" /> Resultado Oficial:
-                            </h3>
-                            <div className="text-gray-700 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(respostaIA) }} />
-                        </div>
-                    )}
-
-                    {/* Histórico Sanfona */}
-                    {historico.length > 0 && (
-                        <div className="mt-10 pt-6">
-                            <div className="flex justify-between items-end mb-4 px-1">
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <Icon name="clock" className="w-4 h-4" /> Histórico
-                                </h3>
-                                <button onClick={limparHistorico} className="text-xs text-red-500 hover:text-white hover:bg-red-500 font-bold border border-red-200 px-3 py-1.5 rounded-full transition-colors">Limpar Histórico</button>
+                        <div className="mt-8 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 relative animate-slide-up">
+                            <div className="absolute top-0 right-8 -translate-y-1/2 bg-white px-4 py-1.5 rounded-full border border-indigo-100 shadow-sm text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <Icon name="cpu" className="w-3.5 h-3.5" /> Resposta IA
                             </div>
-
-                            <div className="space-y-3">
-                                {historico.map((item) => {
-                                    const isExpanded = expandedHist === item.id;
-                                    const resumoTexto = stripHtml(item.resposta).substring(0, 65) + "...";
-
-                                    return (
-                                        <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm transition-all overflow-hidden">
-                                            <div
-                                                onClick={() => toggleHistorico(item.id)}
-                                                className="p-4 cursor-pointer hover:bg-gray-50 flex flex-col gap-2"
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <span className="inline-block bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-md mb-1">Nascido em {item.aniversario}</span>
-                                                        <p className="text-sm font-bold text-gray-800">Parcela de {item.consulta}</p>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-[10px] text-gray-400 font-medium">{item.data}</span>
-                                                        <Icon name={isExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-gray-400" />
-                                                    </div>
-                                                </div>
-
-                                                {!isExpanded && (
-                                                    <p className="text-xs text-gray-500 font-medium italic mt-1">
-                                                        {resumoTexto}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {isExpanded && (
-                                                <div className="p-4 bg-gray-50/80 border-t border-gray-100 text-sm text-gray-700 animate-fade-in"
-                                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.resposta) }}>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                            <div className="text-slate-700 text-[15px] leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(respostaIA) }} />
                         </div>
                     )}
                 </Card>
             );
         };
 
-        // --- Aba 3: Extras (Simulador) ---
-        const ExtrasApp = () => {
-            const [meses, setMeses] = useLocalStorage('hub_simulador_meses', 10);
-            const totalMensalidades = meses * 200;
-            const anosConcluidos = Math.floor(meses / 10);
-            const totalBonus = anosConcluidos * 1000;
-            const totalGeral = totalMensalidades + totalBonus;
-
+        // --- Aba 3: Links Úteis (Substituiu o Simulador) ---
+        const LinksApp = () => {
             return (
-                <Card className="max-w-2xl mx-auto">
-                    <h2 className="text-2xl font-extrabold text-emerald-900 mb-2 flex items-center gap-3">
-                        <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
-                            <Icon name="piggy-bank" />
+                <Card className="max-w-2xl mx-auto border-t-4 border-t-teal-500">
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-3 rounded-2xl text-white shadow-lg shadow-teal-500/30">
+                            <Icon name="external-link" className="w-7 h-7" />
                         </div>
-                        Simulador de Poupança
-                    </h2>
-                    <p className="text-emerald-700/80 text-sm mb-8 font-medium">Vê quanto podes acumular mantendo a frequência acima dos 80%.</p>
-
-                    <div className="mb-8 bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm">
-                        <div className="flex justify-between mb-4">
-                            <label className="text-sm font-bold text-emerald-900">Tempo de Estudo</label>
-                            <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{meses} meses</span>
+                        <div>
+                            <h2 className="text-2xl font-extrabold text-slate-800 leading-tight">Acesso Oficial</h2>
+                            <p className="text-sm font-medium text-slate-500">Abre as tuas aplicações do Governo com 1 clique.</p>
                         </div>
-                        <input type="range" min="1" max="30" value={meses} onChange={e => setMeses(Number(e.target.value))} className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer accent-emerald-600 outline-none"/>
-                        <div className="text-center mt-3 text-xs font-bold text-gray-400 uppercase tracking-widest">{anosConcluidos} {anosConcluidos === 1 ? 'Ano Letivo Completo' : 'Anos Letivos Completos'}</div>
                     </div>
 
-                    <div className="mt-4 p-6 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl text-white text-center shadow-xl">
-                        <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Total Acumulado na Poupança</p>
-                        <h3 className="text-5xl font-black">R$ {totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Link Caixa Tem */}
+                        <a href="https://play.google.com/store/apps/details?id=br.gov.caixa.tem" target="_blank" rel="noopener noreferrer" 
+                           className="group flex flex-col p-6 bg-white border border-slate-200 rounded-3xl hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 transition-all text-left">
+                            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <Icon name="wallet" className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-1">Caixa Tem</h3>
+                            <p className="text-xs font-medium text-slate-500 mb-4 leading-relaxed">
+                                Consulta o saldo, pagamentos efetuados e faz movimentações do teu Pé-de-Meia.
+                            </p>
+                            <div className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-widest">
+                                Abrir App <Icon name="arrow-right" className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </a>
+
+                        {/* Link Jornada do Estudante */}
+                        <a href="https://play.google.com/store/apps/details?id=br.gov.mec.jornadaestudante" target="_blank" rel="noopener noreferrer" 
+                           className="group flex flex-col p-6 bg-white border border-slate-200 rounded-3xl hover:border-teal-400 hover:shadow-xl hover:shadow-teal-500/10 transition-all text-left">
+                            <div className="w-14 h-14 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <Icon name="graduation-cap" className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-1">Jornada Estudante</h3>
+                            <p className="text-xs font-medium text-slate-500 mb-4 leading-relaxed">
+                                App oficial do MEC para conferir a tua frequência escolar enviada ao sistema.
+                            </p>
+                            <div className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 uppercase tracking-widest">
+                                Abrir App <Icon name="arrow-right" className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </a>
                     </div>
                 </Card>
             );
         };
 
-        // --- Aba 4: Dúvidas (Sanfona) ---
+        // --- Aba 4: Dúvidas ---
         const DuvidasApp = () => {
             const [openFaq, setOpenFaq] = useState(null);
-
             const faqData = [
-                {
-                    q: "Quem tem direito ao programa Pé-de-Meia?",
-                    a: "Estudantes ativos no ensino médio de redes públicas, entre 15 e 24 anos, com as famílias obrigatoriamente inscritas no Cadastro Único (CadÚnico) e beneficiárias do Bolsa Família."
-                },
-                {
-                    q: "O que acontece se eu faltar com Atestado Médico?",
-                    a: "Faltas amparadas por atestado médico e validadas pela coordenação da tua escola são ABONADAS no sistema. Elas não diminuem a tua frequência e não perdes o benefício, desde que entregues no prazo da escola."
-                },
-                {
-                    q: "Reprovei de ano. Perco o Pé-de-Meia?",
-                    a: "Se reprovares, perdes o direito à parcela anual (bônus de R$ 1.000 da aprovação), mas se continuares matriculado e a frequentar as aulas no ano seguinte, podes voltar a receber as mensalidades normais."
-                },
-                {
-                    q: "Como levanto o dinheiro?",
-                    a: "O dinheiro cai automaticamente numa conta digital na aplicação Caixa Tem, aberta em teu nome. Podes utilizar a aplicação para pagar contas, fazer PIX ou levantar dinheiro no multibanco (caixa eletrónico)."
-                },
-                {
-                    q: "Posso receber o bônus do ENEM sem fazer o exame?",
-                    a: "Não. O bônus extra de R$ 200 é pago EXCLUSIVAMENTE aos alunos do 3º ano do ensino médio que compareçam aos dois dias de prova do ENEM."
-                },
-                {
-                    q: "Como a IA consegue encontrar a minha data exata?",
-                    a: "Ela consulta as regras habituais de escalonamento baseadas nas políticas do governo, de forma a fornecer uma estimativa fiável."
-                }
+                { q: "Quem tem direito ao programa Pé-de-Meia?", a: "Estudantes ativos no ensino médio de redes públicas, entre 15 e 24 anos, com as famílias inscritas no CadÚnico e beneficiárias do Bolsa Família." },
+                { q: "O que acontece se eu faltar com Atestado Médico?", a: "Faltas amparadas por atestado médico e validadas pela coordenação da tua escola são ABONADAS no sistema e não diminuem a tua frequência." },
+                { q: "Posso receber o bônus do ENEM sem fazer o exame?", a: "Não. O bônus de R$ 200 é pago EXCLUSIVAMENTE aos alunos do 3º ano que compareçam aos dois dias de prova." }
             ];
 
             return (
-                <Card className="max-w-2xl mx-auto">
-                    <h2 className="text-2xl font-extrabold text-blue-900 mb-8 flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                            <Icon name="help-circle" />
+                <Card className="max-w-2xl mx-auto border-t-4 border-t-slate-800">
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="bg-slate-800 p-3 rounded-2xl text-white shadow-lg shadow-slate-500/30">
+                            <Icon name="help-circle" className="w-7 h-7" />
                         </div>
-                        Dúvidas Frequentes
-                    </h2>
+                        <div>
+                            <h2 className="text-2xl font-extrabold text-slate-800 leading-tight">Dúvidas Rápidas</h2>
+                            <p className="text-sm font-medium text-slate-500">Tudo o que precisas de saber.</p>
+                        </div>
+                    </div>
 
                     <div className="space-y-3">
                         {faqData.map((item, idx) => {
                             const isOpen = openFaq === idx;
                             return (
-                                <div key={idx} className="bg-white rounded-2xl border border-blue-100/60 shadow-sm overflow-hidden transition-all">
-                                    <button
-                                        onClick={() => setOpenFaq(isOpen ? null : idx)}
-                                        className="w-full text-left p-5 font-bold text-blue-900 flex justify-between items-center hover:bg-blue-50/50 transition-colors"
-                                    >
+                                <div key={idx} className="bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300">
+                                    <button onClick={() => setOpenFaq(isOpen ? null : idx)}
+                                        className="w-full text-left p-5 font-bold text-slate-800 flex justify-between items-center hover:bg-slate-50 outline-none">
                                         <span className="pr-4">{item.q}</span>
-                                        <Icon name={isOpen ? "chevron-up" : "chevron-down"} className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isOpen ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                            <Icon name={isOpen ? "minus" : "plus"} className="w-4 h-4" />
+                                        </div>
                                     </button>
-
                                     {isOpen && (
-                                        <div className="p-5 pt-0 text-gray-600 text-sm leading-relaxed border-t border-blue-50 bg-blue-50/20 animate-fade-in">
+                                        <div className="p-5 pt-0 text-slate-500 text-sm leading-relaxed border-t border-slate-100 animate-slide-up bg-slate-50/50">
                                             {item.a}
                                         </div>
                                     )}
@@ -588,110 +540,95 @@
             const [user, setUser] = useState(null);
             const [authLoaded, setAuthLoaded] = useState(false);
             const [activeTab, setActiveTab] = useLocalStorage('hub_activeTab', 'frequencia');
-            const [authError, setAuthError] = useState('');
 
-            // Gestão de Autenticação Segura (Firebase)
             useEffect(() => {
-                if (!window.firebaseApp) {
-                    setAuthError(window.firebaseAppError || "Sistema indisponível temporariamente.");
-                    setAuthLoaded(true);
-                    return;
-                }
-
-                const initAuth = async () => {
-                    try {
-                        const { auth, signInWithCustomToken, signInAnonymously } = window.firebaseApp;
-                        
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error("Erro na autenticação automática:", error);
-                        setAuthError("Não foi possível autenticar o utilizador de forma segura.");
-                    }
-                };
-
-                initAuth();
-
+                if (!window.firebaseApp) { setAuthLoaded(true); return; }
                 const unsubscribe = window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, (currentUser) => {
                     setUser(currentUser);
                     setAuthLoaded(true);
                 });
-
                 return () => unsubscribe();
             }, []);
 
-            if (!authLoaded) return <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]"><div className="loader !border-blue-200 !border-t-blue-600 w-12 h-12 border-4"></div></div>;
+            const fazerLoginGoogle = async () => {
+                try {
+                    await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, window.firebaseApp.googleProvider);
+                } catch (error) {
+                    console.error("Erro no login:", error);
+                    alert("Não foi possível fazer o login. Tenta novamente.");
+                }
+            };
 
-            // Tratamento de segurança para dados do utilizador
-            const userName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || "Estudante";
-            const userAvatar = user?.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+            const fazerLogout = () => {
+                window.firebaseApp.signOut(window.firebaseApp.auth);
+            };
+
+            if (!authLoaded) return (
+                <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]">
+                    <div className="spinner !border-blue-200 !border-t-blue-600 w-10 h-10 border-4"></div>
+                </div>
+            );
 
             return (
-                <div className="min-h-screen pb-20 flex flex-col font-sans text-gray-800">
-                    <header className="bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg sticky top-0 z-50">
-                        <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
+                <div className="min-h-screen pb-24 flex flex-col font-sans">
+                    {/* Header Premium */}
+                    <header className="pt-6 pb-4 px-4 sticky top-0 z-50 bg-[#f0f4f8]/80 backdrop-blur-xl border-b border-white/40 shadow-sm">
+                        <div className="max-w-4xl mx-auto flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                                    <Icon name="graduation-cap" className="w-6 h-6" />
+                                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-md">
+                                    <Icon name="backpack" className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-lg sm:text-xl font-black tracking-tight leading-none">Pé-de-Meia</h1>
-                                    <span className="text-[10px] font-bold tracking-widest uppercase text-blue-200">Hub do Estudante</span>
+                                    <h1 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none">Hub Estudante</h1>
+                                    <span className="text-[10px] font-black tracking-widest uppercase text-blue-600">Pé-de-Meia Não Oficial</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 sm:gap-4">
-                                {user && (
-                                    <div className="flex items-center gap-3 bg-white/10 pl-4 pr-1.5 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
-                                        <div className="hidden sm:block text-right">
-                                            <p className="text-[9px] text-blue-200 uppercase tracking-widest font-black leading-none mb-0.5">Aluno</p>
-                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{userName}</p>
-                                        </div>
-                                        <img src={userAvatar} referrerPolicy="no-referrer" alt="Avatar" className="w-8 h-8 rounded-full border-2 border-blue-300 shadow-sm" />
-                                    </div>
-                                )}
-                            </div>
+                            {user ? (
+                                <button onClick={fazerLogout} className="flex items-center gap-2 bg-white px-2 py-1.5 sm:px-3 sm:py-2 rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+                                    <img src={user.photoURL} alt="Avatar" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                                    <span className="hidden sm:block text-xs font-bold text-slate-700 max-w-[80px] truncate">{user.displayName?.split(' ')[0]}</span>
+                                    <Icon name="log-out" className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+                                </button>
+                            ) : (
+                                <button onClick={fazerLoginGoogle} className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-full shadow-sm flex items-center gap-2 hover:bg-slate-50">
+                                    <Icon name="user" className="w-4 h-4" /> Entrar
+                                </button>
+                            )}
                         </div>
                     </header>
 
-                    <div className="max-w-4xl mx-auto px-4 mt-8 mb-8 w-full">
-                        {authError && (
-                            <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 font-semibold">
-                                <Icon name="alert-circle" className="w-4 h-4 inline-block mr-2 -mt-0.5" />
-                                {authError}
-                            </div>
-                        )}
-                        <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                    {/* Navegação Estilo Pill */}
+                    <div className="max-w-4xl mx-auto px-4 mt-8 mb-6 w-full">
+                        <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-2xl border border-white flex gap-1 overflow-x-auto scrollbar-hide shadow-sm">
                             {[
-                                { id: 'frequencia', icon: 'calculator', label: 'Frequência' },
-                                { id: 'pagamento', icon: 'calendar-search', label: 'Datas IA' },
-                                { id: 'extras', icon: 'piggy-bank', label: 'Simulador' },
-                                { id: 'duvidas', icon: 'help-circle', label: 'Dúvidas' }
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                                    className={`snap-start flex items-center gap-2 px-6 py-3 rounded-xl font-bold whitespace-nowrap transition-all text-sm border-2 ${activeTab === tab.id ? 'bg-blue-600 border-blue-600 text-white shadow-[0_4px_15px_-3px_rgba(37,99,235,0.4)] transform -translate-y-0.5' : 'bg-white text-blue-600 border-blue-100 hover:border-blue-300 hover:bg-blue-50/50 shadow-sm'}`}>
-                                    <Icon name={tab.icon} className="w-4 h-4" /> {tab.label}
-                                </button>
-                            ))}
+                                { id: 'frequencia', icon: 'calculator', label: 'Faltas' },
+                                { id: 'pagamento', icon: 'sparkles', label: 'IA' },
+                                { id: 'links', icon: 'external-link', label: 'Apps' },
+                                { id: 'duvidas', icon: 'info', label: 'Dúvidas' }
+                            ].map(tab => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                        className={`flex-1 min-w-[100px] flex justify-center items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${isActive ? 'bg-slate-900 text-white shadow-md transform scale-[1.02]' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}>
+                                        <Icon name={tab.icon} className="w-4 h-4" /> {tab.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <main className="max-w-4xl mx-auto px-4 flex-grow w-full">
                         {activeTab === 'frequencia' && <FrequenciaApp />}
-                        {activeTab === 'pagamento' && <AssistenteIA user={user} />}
-                        {activeTab === 'extras' && <ExtrasApp />}
+                        {activeTab === 'pagamento' && <AssistenteIA user={user} fazerLogin={fazerLoginGoogle} />}
+                        {activeTab === 'links' && <LinksApp />}
                         {activeTab === 'duvidas' && <DuvidasApp />}
                     </main>
 
-                    <footer className="mt-12 bg-white/60 backdrop-blur-md border-t border-gray-200/60 py-5 px-4 w-full text-center">
-                        <div className="max-w-3xl mx-auto">
-                            <p className="text-xs text-gray-500 font-bold flex items-center justify-center gap-1.5 flex-wrap">
-                                <Icon name="info" className="w-4 h-4 text-gray-400" /> Ferramenta INDEPENDENTE. Não é uma aplicação oficial do Governo.
-                            </p>
-                        </div>
+                    <footer className="mt-16 text-center w-full px-4">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                            <Icon name="shield-alert" className="w-3.5 h-3.5" /> App Independente | Feito para ajudar
+                        </p>
                     </footer>
                 </div>
             );
