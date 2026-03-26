@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,9 +81,9 @@
     <!-- Firebase SDKs -->
     <script type="module" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getRemoteConfig, fetchAndActivate, getString } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-remote-config.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+        // Fallback genérico caso não exista __firebase_config no ambiente
         const userConfig = {
             apiKey: "AIzaSyBLr84FdiPT-R1RIVV7Doo7lr16khInur8",
             authDomain: "aprovaenem-api.firebaseapp.com",
@@ -91,35 +91,45 @@
             storageBucket: "aprovaenem-api.firebasestorage.app",
             messagingSenderId: "717749759571",
             appId: "1:717749759571:web:9ef5eafee3e574799c60a6",
-            measurementId: "G-HCY69TGJ9B"
         };
+        
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userConfig;
 
         try {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
-            const remoteConfig = getRemoteConfig(app);
 
-            // Configura intervalo de fetch do Remote Config
-            remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hora
-
-            window.firebaseApp = { app, auth, remoteConfig, fetchAndActivate, getString, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged };
+            // Exportar para o React via Window
+            window.firebaseApp = { app, auth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut };
             window.firebaseAppError = "";
         } catch (error) {
             console.error("Falha ao inicializar Firebase:", error);
-            window.firebaseAppError = "Falha ao inicializar serviços do Firebase.";
+            window.firebaseAppError = "Falha ao inicializar serviços da plataforma.";
         }
     </script>
 
     <!-- React App -->
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // --- Função para extrair texto puro do HTML (usado no histórico) ---
+        // --- Componente Seguro para Ícones ---
+        // Previne o erro "Failed to execute 'removeChild'" garantindo que o React não tente gerir elementos modificados pelo Lucide.
+        const Icon = ({ name, className = "" }) => {
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (containerRef.current && window.lucide) {
+                    containerRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+                    window.lucide.createIcons();
+                }
+            }, [name, className]);
+
+            return <span ref={containerRef} style={{ display: 'contents' }}></span>;
+        };
+
+        // --- Função para extrair texto puro do HTML ---
         const stripHtml = (html) => {
-            let tmp = document.createElement("DIV");
-            tmp.innerHTML = html;
-            return tmp.textContent || tmp.innerText || "";
+            return html.replace(/<[^>]*>?/gm, '');
         };
 
         // --- Sanitiza HTML permitindo apenas tags simples de formatação ---
@@ -127,7 +137,7 @@
             const wrapper = document.createElement("div");
             wrapper.innerHTML = String(html);
 
-            const allowedTags = new Set(['B', 'BR', 'STRONG', 'EM', 'U']);
+            const allowedTags = new Set(['B', 'BR', 'STRONG', 'EM', 'U', 'UL', 'LI']);
             const nodes = wrapper.querySelectorAll('*');
 
             nodes.forEach((node) => {
@@ -136,7 +146,6 @@
                     node.replaceWith(textNode);
                     return;
                 }
-
                 [...node.attributes].forEach((attr) => node.removeAttribute(attr.name));
             });
 
@@ -192,7 +201,8 @@
                     return;
                 }
 
-                const aulasAssistidas = totalAulasMes - totalFaltasAula;
+                // Garante que não tenhamos aulas assistidas negativas
+                const aulasAssistidas = Math.max(0, totalAulasMes - totalFaltasAula);
                 const porcentagem = (aulasAssistidas / totalAulasMes) * 100;
 
                 setResultado({
@@ -206,7 +216,9 @@
             return (
                 <Card className="max-w-2xl mx-auto">
                     <h2 className="text-2xl font-extrabold text-blue-900 mb-6 flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="calculator"></i></div>
+                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                            <Icon name="calculator" />
+                        </div>
                         Calculadora de Frequência
                     </h2>
 
@@ -239,13 +251,13 @@
                         </div>
 
                         <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
-                            <label className="block text-sm font-bold text-red-700 mb-1.5">Dias INTEIROS que você faltou</label>
+                            <label className="block text-sm font-bold text-red-700 mb-1.5">Dias INTEIROS que faltaste</label>
                             <input type="number" className="w-full p-2.5 border border-red-200 bg-white rounded-xl focus:ring-2 focus:ring-red-500 shadow-sm"
                                 value={faltas} onChange={e => setFaltas(Number(e.target.value))} min="0" max="31"/>
                         </div>
 
                         <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100">
-                            <label className="block text-sm font-bold text-orange-700 mb-1.5">AULAS AVULSAS que você faltou</label>
+                            <label className="block text-sm font-bold text-orange-700 mb-1.5">AULAS AVULSAS que faltaste</label>
                             <input type="number" className="w-full p-2.5 border border-orange-200 bg-white rounded-xl focus:ring-2 focus:ring-orange-500 shadow-sm"
                                 value={faltasAulas} onChange={e => setFaltasAulas(Number(e.target.value))} min="0" max="100"/>
                         </div>
@@ -261,9 +273,14 @@
                                 </h3>
                                 <p className="text-center text-sm mb-4 font-bold">
                                     {resultado.aprovado ?
-                                        <span className="text-emerald-600 flex items-center justify-center gap-2"><i data-lucide="check-circle"></i> Dentro da meta!</span> :
-                                        <span className="text-red-600 flex items-center justify-center gap-2"><i data-lucide="alert-triangle"></i> Risco de perder o benefício.</span>}
+                                        <span className="text-emerald-600 flex items-center justify-center gap-2"><Icon name="check-circle" /> Dentro da meta!</span> :
+                                        <span className="text-red-600 flex items-center justify-center gap-2"><Icon name="alert-triangle" /> Risco de perder o benefício.</span>}
                                 </p>
+                            </div>
+                        )}
+                        {resultado && resultado.erro && (
+                            <div className="mt-4 p-4 text-red-700 bg-red-50 border border-red-200 rounded-xl font-bold text-sm">
+                                {resultado.erro}
                             </div>
                         )}
                     </div>
@@ -282,12 +299,8 @@
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [expandedHist, historico, respostaIA]);
-
             const limparHistorico = () => {
-                if(window.confirm("Deseja apagar todo o histórico de pesquisas?")) {
+                if(window.confirm("Desejas apagar todo o histórico de pesquisas?")) {
                     setHistorico([]);
                 }
             };
@@ -302,64 +315,68 @@
                 setRespostaIA('');
 
                 try {
-                    const apiKey = "AIzaSyCIWrENniRQOFPayu9seqHYqXxsbQ-ie7Q";
+                    const apiKey = ""; // A chave da API é injetada em ambiente de execução
+                    const promptText = `Atua como um assistente especialista no programa "Pé-de-Meia" do Governo do Brasil. O aluno indicou que nasceu no mês de ${mesAniversario} e deseja obter informações sobre o pagamento da parcela letiva referente a ${mesConsulta}. Cria uma resposta curta, objetiva e amigável, indicando de forma clara uma estimativa de quando deverá receber (por norma, a última semana do mês seguinte) e relembrando o requisito de frequência (mínimo de 80%). Usa formatação em HTML simples (<b>, <ul>, <li>, <br>) para organizar a resposta. Não uses markdown.`;
 
-                    const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [
-                                    { parts: [{ text: "Responda apenas: OK" }] }
-                                ]
-                            })
+                    const payload = {
+                        contents: [{ parts: [{ text: promptText }] }],
+                        systemInstruction: { parts: [{ text: "És um assistente do portal Pé-de-Meia. Responde sempre de forma clara e amigável, orientando os estudantes brasileiros." }] }
+                    };
+
+                    const fetchWithRetry = async (retries = 5, delay = 1000) => {
+                        try {
+                            const response = await fetch(
+                                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                                {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                }
+                            );
+                            if (!response.ok) throw new Error("Falha na API");
+                            return await response.json();
+                        } catch (err) {
+                            if (retries === 0) throw err;
+                            await new Promise(r => setTimeout(r, delay));
+                            return fetchWithRetry(retries - 1, delay * 2);
                         }
-                    );
+                    };
 
-                    const data = await response.json();
-
-                    console.log(data); // 👈 MUITO IMPORTANTE
-
-                    const texto =
-                        data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const data = await fetchWithRetry();
+                    const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                     if (!texto) {
-                        throw new Error("Resposta inválida");
+                        throw new Error("Resposta inválida do servidor");
                     }
 
                     setRespostaIA(texto);
 
+                    // Atualizar o histórico
+                    const novoHistorico = {
+                        id: Date.now(),
+                        aniversario: mesAniversario,
+                        consulta: mesConsulta,
+                        data: new Date().toLocaleDateString('pt-PT'),
+                        resposta: texto
+                    };
+                    
+                    setHistorico(prev => [novoHistorico, ...prev]);
+
                 } catch (err) {
-                    console.error(err);
-                    setError("Erro ao consultar IA");
+                    console.error("Erro na consulta IA:", err);
+                    setError("Não foi possível consultar a Inteligência Artificial neste momento. Tenta novamente mais tarde.");
                 } finally {
                     setLoading(false);
                 }
             };
 
-            if (!user) {
-                return (
-                    <Card className="max-w-xl mx-auto text-center py-12">
-                        <div className="w-20 h-20 bg-blue-100/80 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-blue-200">
-                            <i data-lucide="calendar-search" size="40"></i>
-                        </div>
-                        <h2 className="text-3xl font-black text-blue-900 mb-3 tracking-tight">Datas Inteligentes</h2>
-                        <p className="text-gray-600 mb-8 font-medium px-4">Utilize nossa IA para saber o dia exato em que seu pagamento cairá, baseado no seu mês de nascimento.</p>
-
-                        <button onClick={window.loginGoogle} className="bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-blue-300 hover:shadow-lg font-bold py-3.5 px-8 rounded-xl transition-all flex items-center justify-center mx-auto gap-3 w-full sm:w-auto transform hover:-translate-y-0.5">
-                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-                            Continuar com Google
-                        </button>
-                    </Card>
-                );
-            }
-
             return (
                 <Card className="max-w-2xl mx-auto">
                     <div className="flex justify-between items-center mb-6 border-b border-blue-100/50 pb-5">
                         <h2 className="text-2xl font-extrabold text-blue-900 flex items-center gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="sparkles"></i></div>
+                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                                <Icon name="sparkles" />
+                            </div>
                             Previsão de Pagamento
                         </h2>
                     </div>
@@ -367,7 +384,7 @@
                     <div className="space-y-5 mb-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
-                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês do seu Aniversário</label>
+                                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Mês do teu Aniversário</label>
                                 <select className="w-full p-2.5 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-blue-900"
                                     value={mesAniversario} onChange={e => setMesAniversario(e.target.value)}>
                                     {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
@@ -390,13 +407,13 @@
                             onClick={consultarIA}
                             disabled={loading}
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 text-white font-bold py-4 px-4 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            {loading ? <div className="loader"></div> : <><i data-lucide="bot" className="w-5 h-5"></i> Consultar Inteligência Artificial</>}
+                            {loading ? <div className="loader"></div> : <><Icon name="bot" className="w-5 h-5" /> Consultar Inteligência Artificial</>}
                         </button>
                     </div>
 
                     {error && (
                         <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-bold animate-fade-in flex items-center gap-2">
-                            <i data-lucide="alert-octagon" className="w-5 h-5"></i>
+                            <Icon name="alert-octagon" className="w-5 h-5" />
                             {error}
                         </div>
                     )}
@@ -405,18 +422,18 @@
                         <div className="mt-2 p-6 bg-white rounded-2xl border border-indigo-100 shadow-[0_4px_20px_-4px_rgba(79,70,229,0.15)] animate-fade-in relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
                             <h3 className="font-extrabold text-indigo-900 mb-4 flex items-center gap-2 text-lg">
-                                <i data-lucide="check-circle-2" className="w-6 h-6 text-indigo-500"></i> Resultado Oficial:
+                                <Icon name="check-circle-2" className="w-6 h-6 text-indigo-500" /> Resultado Oficial:
                             </h3>
                             <div className="text-gray-700 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(respostaIA) }} />
                         </div>
                     )}
 
-                    {/* Histórico Sanfona (Compacto) */}
+                    {/* Histórico Sanfona */}
                     {historico.length > 0 && (
                         <div className="mt-10 pt-6">
                             <div className="flex justify-between items-end mb-4 px-1">
                                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                    <i data-lucide="clock" className="w-4 h-4"></i> Histórico
+                                    <Icon name="clock" className="w-4 h-4" /> Histórico
                                 </h3>
                                 <button onClick={limparHistorico} className="text-xs text-red-500 hover:text-white hover:bg-red-500 font-bold border border-red-200 px-3 py-1.5 rounded-full transition-colors">Limpar Histórico</button>
                             </div>
@@ -439,11 +456,10 @@
                                                     </div>
                                                     <div className="flex flex-col items-end gap-1">
                                                         <span className="text-[10px] text-gray-400 font-medium">{item.data}</span>
-                                                        <i data-lucide={isExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-gray-400"></i>
+                                                        <Icon name={isExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-gray-400" />
                                                     </div>
                                                 </div>
 
-                                                {/* Se estiver fechado, mostra 3 pontinhos */}
                                                 {!isExpanded && (
                                                     <p className="text-xs text-gray-500 font-medium italic mt-1">
                                                         {resumoTexto}
@@ -451,7 +467,6 @@
                                                 )}
                                             </div>
 
-                                            {/* Se estiver aberto, mostra tudo */}
                                             {isExpanded && (
                                                 <div className="p-4 bg-gray-50/80 border-t border-gray-100 text-sm text-gray-700 animate-fade-in"
                                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.resposta) }}>
@@ -478,10 +493,12 @@
             return (
                 <Card className="max-w-2xl mx-auto">
                     <h2 className="text-2xl font-extrabold text-emerald-900 mb-2 flex items-center gap-3">
-                        <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="piggy-bank"></i></div>
+                        <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+                            <Icon name="piggy-bank" />
+                        </div>
                         Simulador de Poupança
                     </h2>
-                    <p className="text-emerald-700/80 text-sm mb-8 font-medium">Veja quanto você pode acumular mantendo a frequência acima de 80%.</p>
+                    <p className="text-emerald-700/80 text-sm mb-8 font-medium">Vê quanto podes acumular mantendo a frequência acima dos 80%.</p>
 
                     <div className="mb-8 bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm">
                         <div className="flex justify-between mb-4">
@@ -489,7 +506,7 @@
                             <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{meses} meses</span>
                         </div>
                         <input type="range" min="1" max="30" value={meses} onChange={e => setMeses(Number(e.target.value))} className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer accent-emerald-600 outline-none"/>
-                        <div className="text-center mt-3 text-xs font-bold text-gray-400 uppercase tracking-widest">{Math.floor(meses/10)} Anos Letivos Completos</div>
+                        <div className="text-center mt-3 text-xs font-bold text-gray-400 uppercase tracking-widest">{anosConcluidos} {anosConcluidos === 1 ? 'Ano Letivo Completo' : 'Anos Letivos Completos'}</div>
                     </div>
 
                     <div className="mt-4 p-6 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl text-white text-center shadow-xl">
@@ -504,10 +521,6 @@
         const DuvidasApp = () => {
             const [openFaq, setOpenFaq] = useState(null);
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [openFaq]);
-
             const faqData = [
                 {
                     q: "Quem tem direito ao programa Pé-de-Meia?",
@@ -515,30 +528,32 @@
                 },
                 {
                     q: "O que acontece se eu faltar com Atestado Médico?",
-                    a: "Faltas amparadas por atestado médico e validadas pela coordenação da sua escola são ABONADAS no sistema. Elas não diminuem sua frequência e você não perde o benefício, desde que entregues no prazo da escola."
+                    a: "Faltas amparadas por atestado médico e validadas pela coordenação da tua escola são ABONADAS no sistema. Elas não diminuem a tua frequência e não perdes o benefício, desde que entregues no prazo da escola."
                 },
                 {
                     q: "Reprovei de ano. Perco o Pé-de-Meia?",
-                    a: "Se você reprovar, perde o direito à parcela anual (bônus de R$ 1.000 da aprovação), mas se continuar matriculado e frequentando as aulas no ano seguinte, pode voltar a receber as mensalidades normais."
+                    a: "Se reprovares, perdes o direito à parcela anual (bônus de R$ 1.000 da aprovação), mas se continuares matriculado e a frequentar as aulas no ano seguinte, podes voltar a receber as mensalidades normais."
                 },
                 {
-                    q: "Como saco o dinheiro?",
-                    a: "O dinheiro cai automaticamente em uma conta digital no aplicativo Caixa Tem, aberta no seu nome. Você pode usar o app para pagar contas, fazer PIX ou sacar no caixa eletrônico."
+                    q: "Como levanto o dinheiro?",
+                    a: "O dinheiro cai automaticamente numa conta digital na aplicação Caixa Tem, aberta em teu nome. Podes utilizar a aplicação para pagar contas, fazer PIX ou levantar dinheiro no multibanco (caixa eletrónico)."
                 },
                 {
-                    q: "Posso receber o bônus do ENEM sem fazer a prova?",
-                    a: "Não. O bônus extra de R$ 200 é pago EXCLUSIVAMENTE para os alunos do 3º ano do ensino médio que comparecerem aos dois dias de prova do ENEM."
+                    q: "Posso receber o bônus do ENEM sem fazer o exame?",
+                    a: "Não. O bônus extra de R$ 200 é pago EXCLUSIVAMENTE aos alunos do 3º ano do ensino médio que compareçam aos dois dias de prova do ENEM."
                 },
                 {
-                    q: "Como a IA consegue achar minha data exata?",
-                    a: "Ela consulta uma Regra de Ouro baseada no escalonamento oficial do Caixa Tem e nos repasses do MEC, travando os dias para não cometer erros."
+                    q: "Como a IA consegue encontrar a minha data exata?",
+                    a: "Ela consulta as regras habituais de escalonamento baseadas nas políticas do governo, de forma a fornecer uma estimativa fiável."
                 }
             ];
 
             return (
                 <Card className="max-w-2xl mx-auto">
                     <h2 className="text-2xl font-extrabold text-blue-900 mb-8 flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="help-circle"></i></div>
+                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                            <Icon name="help-circle" />
+                        </div>
                         Dúvidas Frequentes
                     </h2>
 
@@ -552,7 +567,7 @@
                                         className="w-full text-left p-5 font-bold text-blue-900 flex justify-between items-center hover:bg-blue-50/50 transition-colors"
                                     >
                                         <span className="pr-4">{item.q}</span>
-                                        <i data-lucide={isOpen ? "chevron-up" : "chevron-down"} className="w-5 h-5 text-blue-500 flex-shrink-0"></i>
+                                        <Icon name={isOpen ? "chevron-up" : "chevron-down"} className="w-5 h-5 text-blue-500 flex-shrink-0" />
                                     </button>
 
                                     {isOpen && (
@@ -575,61 +590,44 @@
             const [activeTab, setActiveTab] = useLocalStorage('hub_activeTab', 'frequencia');
             const [authError, setAuthError] = useState('');
 
+            // Gestão de Autenticação Segura (Firebase)
             useEffect(() => {
-                window.loginGoogle = () => {};
-                window.logout = () => {};
-                let unsubscribeAuth = null;
-
-                if (window.firebaseAppError) {
-                    setAuthError(window.firebaseAppError);
+                if (!window.firebaseApp) {
+                    setAuthError(window.firebaseAppError || "Sistema indisponível temporariamente.");
                     setAuthLoaded(true);
-                    return () => {};
+                    return;
                 }
 
-                const failSafeTimeout = setTimeout(() => {
-                    if (!window.firebaseApp) {
-                        setAuthError("Falha ao inicializar autenticação. Recarregue a página.");
-                        setAuthLoaded(true);
+                const initAuth = async () => {
+                    try {
+                        const { auth, signInWithCustomToken, signInAnonymously } = window.firebaseApp;
+                        
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Erro na autenticação automática:", error);
+                        setAuthError("Não foi possível autenticar o utilizador de forma segura.");
                     }
-                }, 5000);
-
-                const checkFirebase = setInterval(() => {
-                    if (window.firebaseApp) {
-                        clearInterval(checkFirebase);
-                        clearTimeout(failSafeTimeout);
-
-                        unsubscribeAuth = window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, (currentUser) => {
-                            setUser(currentUser);
-                            setAuthLoaded(true);
-                        });
-
-                        window.loginGoogle = async () => {
-                            try {
-                                const provider = new window.firebaseApp.GoogleAuthProvider();
-                                await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, provider);
-                            } catch (error) {
-                                console.error("Erro no login", error);
-                            }
-                        };
-
-                        window.logout = async () => {
-                            await window.firebaseApp.signOut(window.firebaseApp.auth);
-                        };
-                    }
-                }, 100);
-
-                return () => {
-                    clearInterval(checkFirebase);
-                    clearTimeout(failSafeTimeout);
-                    if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
                 };
+
+                initAuth();
+
+                const unsubscribe = window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, (currentUser) => {
+                    setUser(currentUser);
+                    setAuthLoaded(true);
+                });
+
+                return () => unsubscribe();
             }, []);
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [activeTab, authLoaded, user]);
-
             if (!authLoaded) return <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]"><div className="loader !border-blue-200 !border-t-blue-600 w-12 h-12 border-4"></div></div>;
+
+            // Tratamento de segurança para dados do utilizador
+            const userName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || "Estudante";
+            const userAvatar = user?.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
 
             return (
                 <div className="min-h-screen pb-20 flex flex-col font-sans text-gray-800">
@@ -637,7 +635,7 @@
                         <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                                    <i data-lucide="graduation-cap" className="w-6 h-6"></i>
+                                    <Icon name="graduation-cap" className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <h1 className="text-lg sm:text-xl font-black tracking-tight leading-none">Pé-de-Meia</h1>
@@ -646,21 +644,14 @@
                             </div>
 
                             <div className="flex items-center gap-3 sm:gap-4">
-                                {user ? (
+                                {user && (
                                     <div className="flex items-center gap-3 bg-white/10 pl-4 pr-1.5 py-1.5 rounded-full border border-white/10 backdrop-blur-sm">
                                         <div className="hidden sm:block text-right">
                                             <p className="text-[9px] text-blue-200 uppercase tracking-widest font-black leading-none mb-0.5">Aluno</p>
-                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{(user.displayName || user.email || "Aluno").split(' ')[0]}</p>
+                                            <p className="text-sm font-bold truncate max-w-[100px] leading-none">{userName}</p>
                                         </div>
-                                        <img src={user.photoURL} referrerPolicy="no-referrer" alt="Avatar" className="w-8 h-8 rounded-full border-2 border-blue-300 shadow-sm" />
-                                        <button onClick={window.logout} title="Sair" className="text-white/80 hover:text-white hover:bg-red-500 p-1.5 rounded-full transition-all">
-                                            <i data-lucide="log-out" className="w-4 h-4"></i>
-                                        </button>
+                                        <img src={userAvatar} referrerPolicy="no-referrer" alt="Avatar" className="w-8 h-8 rounded-full border-2 border-blue-300 shadow-sm" />
                                     </div>
-                                ) : (
-                                    <button onClick={window.loginGoogle} className="text-sm bg-white text-blue-700 font-extrabold hover:bg-blue-50 px-6 py-2.5 rounded-full transition-all">
-                                        Fazer Login
-                                    </button>
                                 )}
                             </div>
                         </div>
@@ -669,6 +660,7 @@
                     <div className="max-w-4xl mx-auto px-4 mt-8 mb-8 w-full">
                         {authError && (
                             <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 font-semibold">
+                                <Icon name="alert-circle" className="w-4 h-4 inline-block mr-2 -mt-0.5" />
                                 {authError}
                             </div>
                         )}
@@ -681,7 +673,7 @@
                             ].map(tab => (
                                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                                     className={`snap-start flex items-center gap-2 px-6 py-3 rounded-xl font-bold whitespace-nowrap transition-all text-sm border-2 ${activeTab === tab.id ? 'bg-blue-600 border-blue-600 text-white shadow-[0_4px_15px_-3px_rgba(37,99,235,0.4)] transform -translate-y-0.5' : 'bg-white text-blue-600 border-blue-100 hover:border-blue-300 hover:bg-blue-50/50 shadow-sm'}`}>
-                                    <i data-lucide={tab.icon} className="w-4 h-4"></i> {tab.label}
+                                    <Icon name={tab.icon} className="w-4 h-4" /> {tab.label}
                                 </button>
                             ))}
                         </div>
@@ -697,7 +689,7 @@
                     <footer className="mt-12 bg-white/60 backdrop-blur-md border-t border-gray-200/60 py-5 px-4 w-full text-center">
                         <div className="max-w-3xl mx-auto">
                             <p className="text-xs text-gray-500 font-bold flex items-center justify-center gap-1.5 flex-wrap">
-                                <i data-lucide="info" className="w-4 h-4 text-gray-400"></i> Ferramenta INDEPENDENTE. Não é um aplicativo oficial do Governo Federal.
+                                <Icon name="info" className="w-4 h-4 text-gray-400" /> Ferramenta INDEPENDENTE. Não é uma aplicação oficial do Governo.
                             </p>
                         </div>
                     </footer>
